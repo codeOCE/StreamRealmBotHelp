@@ -21,4 +21,8 @@ thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+
+# Local Scripts
+generate-token.js
+test-tmi.js
+clear-tokens.js

@@ -9,7 +9,11 @@
         "target": "es2021",
         "sourceMap": true,
         "outDir": "./dist",
+        "rootDir": "src",
         "baseUrl": "./",
         "incremental": true
-    }
+    },
+    "include": [
+        "src/**/*"
+    ]
 }

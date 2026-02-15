@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String    @id @default(uuid())
+  twitchId              String    @unique
+  username              String
+  email                 String?
+  createdAt             DateTime  @default(now())
+  encryptedAccessToken  String?
+  encryptedRefreshToken String?
+  tokenExpiresAt        DateTime?
+  updatedAt             DateTime  @updatedAt
+  tenants               Tenant[]  @relation("TenantOwner")
+}
+
+model Tenant {
+  id              String          @id @default(uuid())
+  ownerId         String
+  planTier        PlanTier        @default(FREE)
+  stripeSubId     String?
+  settings        Json?
+  isConnected     Boolean         @default(false)
+  name            String
+  twitchId        String          @unique
+  botAccessToken  String?
+  botRefreshToken String?
+  botUsername     String?
+  targetChannel   String?
+  auditLogs       AuditLog[]
+  chatLogs        ChatLog[]
+  commands        Command[]
+  eventLogs       EventLog[]
+  modRules        ModRule[]
+  owner           User            @relation("TenantOwner", fields: [ownerId], references: [id])
+  timers          Timer[]
+  viewerProfiles  ViewerProfile[]
+  integrations    Integration[]
+}
+
+model Integration {
+  id                    String   @id @default(uuid())
+  tenantId              String
+  provider              String   // "nightbot", "streamelements", "fossabot"
+  externalUserId        String?
+  encryptedAccessToken  String
+  encryptedRefreshToken String?
+  tokenExpiresAt        DateTime?
+  metadata              Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  tenant                Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, provider])
+}
+
+model Command {
+  id           String       @id @default(uuid())
+  tenantId     String
+  trigger      String
+  enabled      Boolean      @default(true)
+  cooldown     Int          @default(0)
+  userLevel    UserLevel    @default(VIEWER)
+  responses    Json
+  responseType ResponseType @default(SAY)
+  aliases      Json?
+  usages       Int          @default(0)
+  description  String?
+  category     String       @default("General")
+  isBuiltIn    Boolean      @default(false)
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, trigger])
+}
+
+enum ResponseType {
+  SAY
+  MENTION
+  REPLY
+  WHISPER
+}
+
+model Timer {
+  id              String   @id @default(uuid())
+  tenantId        String
+  name            String
+  message         String
+  intervalSeconds Int      @default(300)
+  minMessages     Int      @default(1)
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+}
+
+model ModRule {
+  id       String  @id @default(uuid())
+  tenantId String
+  type     String
+  enabled  Boolean @default(true)
+  settings Json?
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+}
+
+model ViewerProfile {
+  id           String   @id @default(uuid())
+  tenantId     String
+  twitchUserId String
+  xp           Int      @default(0)
+  firstSeenAt  DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+  level        Int      @default(1)
+  points       Int      @default(0)
+  username     String
+  watchTime    Int      @default(0)
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, twitchUserId])
+}
+
+model ChatLog {
+  id        BigInt   @id @default(autoincrement())
+  tenantId  String
+  viewerId  String
+  message   String
+  timestamp DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model EventLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  type      String
+  data      Json
+  timestamp DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  action    String   // e.g., "TIMEOUT", "BAN", "COMMAND_ADD", "TIMER_UPDATE"
+  actor     String   // e.g., "streamer", "bot", "moderator_name"
+  target    String?  // e.g., "viewer_name"
+  metadata  Json?    // e.g., { reason: "spam", duration: 600 }
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  PARTNER
+}
+
+enum UserLevel {
+  VIEWER
+  SUBSCRIBER
+  MODERATOR
+  BROADCASTER
+}

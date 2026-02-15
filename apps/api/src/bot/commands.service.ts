@@ -1,0 +1,220 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../common/prisma/prisma.service';
+import { AuditService } from './audit.service';
+import { UserLevel } from '@prisma/client';
+import { VariableService } from './variable.service';
+import { BotEventsGateway } from './bot-events.gateway';
+
+@Injectable()
+export class CommandsService {
+    constructor(
+        private prisma: PrismaService,
+        private auditService: AuditService,
+        private variableService: VariableService,
+        private events: BotEventsGateway
+    ) { }
+
+    private readonly builtInDefaults = [
+        { trigger: 'uptime', category: 'Streaming', description: 'Shows how long the stream has been live.', userLevel: 'VIEWER' as UserLevel, cooldown: 10, responses: [] },
+        { trigger: 'game', category: 'Streaming', description: 'Shows the current game being played.', userLevel: 'VIEWER' as UserLevel, cooldown: 10, responses: [] },
+        { trigger: 'title', category: 'Streaming', description: 'Shows the current stream title.', userLevel: 'VIEWER' as UserLevel, cooldown: 10, responses: [] },
+
+        { trigger: 'stats', category: 'Loyalty', description: 'Displays your XP, Level, and Watchtime.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, responses: [] },
+        { trigger: 'xp', category: 'Loyalty', description: 'Alias for !stats.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, responses: [] },
+        { trigger: 'top', category: 'Loyalty', description: 'Shows the top XP leaderboard.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, responses: [] },
+        { trigger: 'leaderboard', category: 'Loyalty', description: 'Alias for !top.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, responses: [] },
+        { trigger: 'watchtime', category: 'Loyalty', description: 'Shows how much time you have spent in the stream.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, responses: [] },
+        { trigger: 'followage', category: 'Loyalty', description: 'Shows how long you have been following the channel.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, responses: [] },
+
+        { trigger: 'socials', category: 'Utility', description: 'Displays links to social media profiles.', userLevel: 'VIEWER' as UserLevel, cooldown: 20, responses: [] },
+        { trigger: 'commands', category: 'Utility', description: 'Lists all available commands.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, responses: [] },
+        { trigger: 'help', category: 'Utility', description: 'Alias for !commands.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, responses: [] },
+        { trigger: 'ping', category: 'Utility', description: 'Check if the bot is online.', userLevel: 'VIEWER' as UserLevel, cooldown: 5, responses: [] },
+
+        { trigger: 'shoutout', category: 'Moderation', description: 'Give a shoutout to another streamer.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
+        { trigger: 'so', category: 'Moderation', description: 'Alias for !shoutout.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
+        { trigger: 'addcom', category: 'Moderation', description: 'Add a new custom command from chat.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
+        { trigger: 'editcom', category: 'Moderation', description: 'Edit an existing custom command from chat.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
+        { trigger: 'delcom', category: 'Moderation', description: 'Delete a custom command from chat.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
+        { trigger: 'permit', category: 'Moderation', description: 'Permit a user to post links.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
+    ];
+
+    async findAll(tenantId: string) {
+        // Ensure built-ins exist
+        await this.initializeBuiltIns(tenantId);
+
+        return this.prisma.command.findMany({
+            where: { tenantId },
+            orderBy: { trigger: 'asc' }
+        });
+    }
+
+    private async initializeBuiltIns(tenantId: string) {
+        for (const def of this.builtInDefaults) {
+            await this.prisma.command.upsert({
+                where: {
+                    tenantId_trigger: {
+                        tenantId,
+                        trigger: def.trigger,
+                    },
+                },
+                update: {
+                    isBuiltIn: true,
+                    description: def.description,
+                    category: def.category,
+                },
+                create: {
+                    ...def,
+                    tenantId,
+                    isBuiltIn: true,
+                    enabled: true,
+                },
+            });
+        }
+    }
+
+    async create(tenantId: string, data: { trigger: string; responses: any; responseType?: any; aliases?: any; cooldown: number; userLevel: UserLevel; description?: string; category?: string }) {
+        // Automatically normalize external syntax (SE, etc)
+        const normalizedResponses = Array.isArray(data.responses)
+            ? data.responses.map(r => this.variableService.normalizeSyntax(r))
+            : this.variableService.normalizeSyntax(data.responses as any);
+
+        const cmd = await this.prisma.command.create({
+            data: {
+                ...data,
+                responses: normalizedResponses,
+                tenantId,
+                isBuiltIn: false,
+                category: data.category || 'General',
+            },
+        });
+
+        await this.auditService.log({
+            tenantId,
+            action: 'COMMAND_ADD',
+            actor: 'Dashboard',
+            target: `!${cmd.trigger}`,
+            metadata: { response: cmd.responses }
+        });
+
+        this.events.emitCommandUpdate(tenantId);
+        return cmd;
+    }
+
+    async update(id: string, data: { trigger?: string; responses?: any; responseType?: any; aliases?: any; usages?: number; cooldown?: number; userLevel?: UserLevel; enabled?: boolean; description?: string; category?: string }) {
+        // Automatically normalize external syntax (SE, etc) if responses are being updated
+        if (data.responses) {
+            data.responses = Array.isArray(data.responses)
+                ? data.responses.map(r => this.variableService.normalizeSyntax(r))
+                : this.variableService.normalizeSyntax(data.responses as any);
+        }
+
+        const cmd = await this.prisma.command.update({
+            where: { id },
+            data,
+        });
+
+        await this.auditService.log({
+            tenantId: cmd.tenantId,
+            action: 'COMMAND_EDIT',
+            actor: 'Dashboard',
+            target: `!${cmd.trigger}`,
+            metadata: { data }
+        });
+
+        this.events.emitCommandUpdate(cmd.tenantId);
+        return cmd;
+    }
+
+    async delete(id: string) {
+        // Prevent deletion of built-in commands (they should only be disabled)
+        const command = await this.prisma.command.findUnique({ where: { id } });
+        if ((command as any)?.isBuiltIn) {
+            throw new Error('Built-in commands cannot be deleted, only disabled.');
+        }
+
+        const res = await this.prisma.command.delete({
+            where: { id },
+        });
+
+        await this.auditService.log({
+            tenantId: res.tenantId,
+            action: 'COMMAND_DELETE',
+            actor: 'Dashboard',
+            target: `!${res.trigger}`
+        });
+
+        this.events.emitCommandUpdate(res.tenantId);
+        return res;
+    }
+
+    async importBulk(tenantId: string, commands: any[]) {
+        const results = {
+            imported: 0,
+            skipped: 0,
+            errors: 0
+        };
+
+        for (const rawCmd of commands) {
+            try {
+                // Basic validation
+                if (!rawCmd.trigger || !rawCmd.responses) {
+                    results.skipped++;
+                    continue;
+                }
+
+                const trigger = rawCmd.trigger.toLowerCase().replace('!', '');
+
+                // Check if already exists
+                const existing = await this.prisma.command.findUnique({
+                    where: {
+                        tenantId_trigger: {
+                            tenantId,
+                            trigger
+                        }
+                    }
+                });
+
+                if (existing) {
+                    results.skipped++;
+                    continue;
+                }
+
+                // Normalize syntax
+                const normalizedResponses = Array.isArray(rawCmd.responses)
+                    ? rawCmd.responses.map((r: string) => this.variableService.normalizeSyntax(r))
+                    : [this.variableService.normalizeSyntax(rawCmd.responses as string)];
+
+                await this.prisma.command.create({
+                    data: {
+                        tenantId,
+                        trigger,
+                        responses: normalizedResponses,
+                        description: rawCmd.description || `Imported from ${rawCmd.source || 'external bot'}`,
+                        category: rawCmd.category || 'Imported',
+                        userLevel: rawCmd.userLevel || 'VIEWER',
+                        cooldown: rawCmd.cooldown || 10,
+                        enabled: true,
+                        isBuiltIn: false
+                    }
+                });
+
+                results.imported++;
+            } catch (err) {
+                console.error(`Failed to import command: ${rawCmd.trigger}`, err);
+                results.errors++;
+            }
+        }
+
+        await this.auditService.log({
+            tenantId,
+            action: 'COMMAND_IMPORT',
+            actor: 'Dashboard',
+            target: `${results.imported} commands`,
+            metadata: { results }
+        });
+
+        this.events.emitCommandUpdate(tenantId);
+        return results;
+    }
+}
