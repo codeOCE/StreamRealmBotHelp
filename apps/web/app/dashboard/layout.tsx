@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from 'react';
 
+/**
+ * Renders the dashboard layout with a persistent sidebar, topbar, and a main content area.
+ *
+ * @param children - Content to display inside the main content area of the layout
+ * @returns The dashboard layout element containing the sidebar (navigation and user card), topbar (search and actions), and a centered content wrapper that renders `children`
+ */
 export default function DashboardLayout({
     children,
 }: {

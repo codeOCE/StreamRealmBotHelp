@@ -13,6 +13,14 @@ interface SimulationResult {
     variables: any;
 }
 
+/**
+ * Provides a UI to simulate a chat/command execution and inspect the resulting response, variables context, and execution logs.
+ *
+ * The component renders inputs for a command trigger, optional arguments, and a simulated username, plus a Run button.
+ * When invoked, it sends the simulation request to the backend, shows loading and error feedback, and displays the simulation result in a terminal-style console.
+ *
+ * @returns The JSX element for the command tester interface.
+ */
 export function CommandTester() {
     const [trigger, setTrigger] = useState("");
     const [args, setArgs] = useState("");

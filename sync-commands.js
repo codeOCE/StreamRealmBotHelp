@@ -2,6 +2,11 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+/**
+ * Synchronizes a predefined set of built-in commands into the database for the first tenant.
+ *
+ * Creates any missing built-in command records (marked as built-in and enabled) for the tenant, logs which commands were added or skipped, and disconnects the Prisma client when finished.
+ */
 async function syncCommands() {
     try {
         // Get the first tenant (your account)

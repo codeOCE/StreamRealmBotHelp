@@ -24,6 +24,13 @@ interface BattleHistory {
     createdAt: string;
 }
 
+/**
+ * Renders the Interactions page with MMR leaderboard and recent battle history organized in tabs.
+ *
+ * Fetches leaderboard and history on mount, shows loading and empty states, and formats rank colors and win rates for presentation.
+ *
+ * @returns The React element containing the leaderboard and battle history views.
+ */
 export default function InteractionsPage() {
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [battleHistory, setBattleHistory] = useState<BattleHistory[]>([]);

@@ -19,6 +19,12 @@ export const metadata: Metadata = {
 
 import { Toaster } from "sonner";
 
+/**
+ * Root layout component that wraps pages with the global HTML structure, configured fonts, and an application toaster.
+ *
+ * @param children - The React node(s) rendered inside the document body.
+ * @returns The top-level HTML element containing the body with the Geist fonts applied and a Toaster positioned bottom-right using the dark theme with rich colors enabled.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

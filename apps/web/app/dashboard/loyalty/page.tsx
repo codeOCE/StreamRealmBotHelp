@@ -19,6 +19,14 @@ interface DashboardData {
     skillTree: any[]; // Typing handled in component
 }
 
+/**
+ * Render the Loyalty & Progression dashboard that displays user stats and an interactive talent tree.
+ *
+ * Fetches dashboard data on mount, shows loading and error states, and allows unlocking skills with an optimistic
+ * local update followed by a background refresh to reconcile server state.
+ *
+ * @returns The React element for the loyalty dashboard containing stats cards, a talent tree, and notification handling.
+ */
 export default function LoyaltyPage() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -102,6 +110,17 @@ export default function LoyaltyPage() {
     );
 }
 
+/**
+ * Renders a small statistic card with a title, prominent value, and supporting icon.
+ *
+ * The card applies an alternate visual style when `highlight` is true to draw attention to the value.
+ *
+ * @param title - Short label shown in the card header (e.g., "Current Level")
+ * @param value - Primary value displayed prominently (e.g., "42")
+ * @param icon - Single-character or icon string rendered in the header as a visual cue
+ * @param highlight - When true, uses the highlighted color and border styles to emphasize the card
+ * @returns A JSX element representing the stat card
+ */
 function StatCard({ title, value, icon, highlight = false }: { title: string, value: string, icon: string, highlight?: boolean }) {
     return (
         <Card className={`bg-surface-base border-white/[0.05] ${highlight ? 'border-brand-primary/50 bg-brand-primary/5' : ''}`}>

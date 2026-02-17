@@ -6,6 +6,15 @@ import { Loader2, Terminal } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 
+/**
+ * Renders the migrating step UI and orchestrates the migration of selected commands to the local registry.
+ *
+ * Initiates authentication to obtain tenant context, determines which commands were selected, shows a simulated progress
+ * handshake, sends a POST to the import processing endpoint, streams results into the migration log, and transitions
+ * to the completion step (invoking an optional onComplete callback) when finished. Errors are logged and progress is reset.
+ *
+ * @returns The React element for the "Import - Migrating" step, including a circular progress indicator and a live migration log.
+ */
 export function ImportStepMigrating() {
     const { state, addLog, setStep, onComplete } = useImport();
     const [progress, setProgress] = useState(0);

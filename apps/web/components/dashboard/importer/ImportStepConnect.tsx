@@ -9,6 +9,11 @@ import { Card } from "@/components/ui/card";
 import { Loader2, CheckCircle2, Bot, CloudDownload, FileJson, ArrowRight, Ghost, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
+/**
+ * Presents the "Connect" step of the import flow, letting the user choose a source (StreamElements via JWT, Nightbot via OAuth, or manual JSON), connect or authenticate to that source, and import commands into the importer state.
+ *
+ * @returns The UI for selecting a command source, managing connections, and triggering command import.
+ */
 export function ImportStepConnect() {
     const { state, setProvider, setStep, setItems } = useImport();
     const [token, setToken] = useState("");
