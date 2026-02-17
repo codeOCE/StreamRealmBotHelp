@@ -1,92 +1,94 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import * as tmi from 'tmi.js';
 
 @Injectable()
-export class XPService {
-    private readonly logger = new Logger(XPService.name);
+export class XpService {
+    private readonly logger = new Logger(XpService.name);
 
-    constructor(private prisma: PrismaService) { }
+    // XP Formula: Level * 100 * 1.2^Level
+    // Example: Lvl 1->2 = 100xp, Lvl 10->11 = ~619xp
+    private readonly XP_MULTIPLIER = 100;
+    private readonly XP_EXPONENT = 1.2;
 
-    async trackActivity(tenantId: string, twitchUserId: string, username: string) {
-        const now = new Date();
-        const profile = await this.prisma.viewerProfile.findUnique({
-            where: { tenantId_twitchUserId: { tenantId, twitchUserId } }
-        });
+    constructor(
+        private prisma: PrismaService,
+    ) { }
 
-        if (!profile) {
-            return this.prisma.viewerProfile.create({
-                data: {
-                    tenantId,
-                    twitchUserId,
-                    username,
-                    xp: 10,
-                    level: 1,
-                    watchTime: 1, // Start with 1 min
-                    lastActiveAt: now,
-                }
-            });
-        }
-
-        const minutesSinceLastActive = (now.getTime() - profile.lastActiveAt.getTime()) / (1000 * 60);
-
-        // Only grant XP and watchTime every minute of activity
-        if (minutesSinceLastActive >= 1) {
-            const xpGain = 10;
-            const newXp = profile.xp + xpGain;
-            const newLevel = Math.floor(Math.sqrt(newXp / 100)) + 1;
-            const watchTimeGain = Math.floor(minutesSinceLastActive);
-
-            return this.prisma.viewerProfile.update({
-                where: { id: profile.id },
-                data: {
-                    username, // Update username if they changed it
-                    xp: newXp,
-                    level: newLevel,
-                    watchTime: { increment: watchTimeGain },
-                    lastActiveAt: now,
-                }
-            });
-        }
-
-        return profile;
+    calculateXpForNextLevel(currentLevel: number): number {
+        return Math.floor(currentLevel * this.XP_MULTIPLIER * Math.pow(this.XP_EXPONENT, currentLevel));
     }
 
-    async getTopUsers(tenantId: string, limit: number = 5) {
-        return this.prisma.viewerProfile.findMany({
-            where: { tenantId },
-            orderBy: { xp: 'desc' },
-            take: limit,
-            select: {
-                username: true,
-                xp: true,
-                level: true,
-                watchTime: true
+    async addXp(tenantId: string, userId: string, amount: number) {
+        // 1. Get current user profile
+        const profile = await this.prisma.viewerProfile.findUnique({
+            where: {
+                tenantId_twitchUserId: {
+                    tenantId,
+                    twitchUserId: userId,
+                }
             }
         });
+
+        if (!profile) return null;
+
+        // 2. Calculate new XP
+        let newXp = profile.seasonXp + amount;
+        let newTotalPoints = profile.points + amount; // 1 XP = 1 Point for now
+        let currentLevel = profile.level;
+        let skillPointsToAdd = 0;
+        let leveledUp = false;
+
+        // 3. Level Up Loop (in case of massive XP gain)
+        while (newXp >= this.calculateXpForNextLevel(currentLevel)) {
+            newXp -= this.calculateXpForNextLevel(currentLevel);
+            currentLevel++;
+            skillPointsToAdd++;
+            leveledUp = true;
+        }
+
+        // 4. Update Database
+        const updatedProfile = await this.prisma.viewerProfile.update({
+            where: { id: profile.id },
+            data: {
+                seasonXp: newXp,
+                level: currentLevel,
+                points: newTotalPoints,
+                skillPoints: { increment: skillPointsToAdd },
+                lastActiveAt: new Date(),
+            }
+        });
+
+        if (leveledUp) {
+            this.logger.log(`User ${profile.username} leveled up to ${currentLevel}!`);
+            // TODO: Emit event via Gateway
+        }
+
+        return {
+            leveledUp,
+            currentLevel,
+            currentXp: newXp,
+            nextLevelXp: this.calculateXpForNextLevel(currentLevel),
+            skillPoints: updatedProfile.skillPoints
+        };
     }
 
-    async getUserStats(tenantId: string, twitchUserId: string): Promise<{ xp: number; level: number; watchTime: number } | null> {
-        try {
-            const profile = await this.prisma.viewerProfile.findUnique({
-                where: {
-                    tenantId_twitchUserId: {
-                        tenantId,
-                        twitchUserId,
-                    },
-                },
-            });
+    async prestige(tenantId: string, userId: string) {
+        const profile = await this.prisma.viewerProfile.findUnique({
+            where: { tenantId_twitchUserId: { tenantId, twitchUserId: userId } }
+        });
 
-            if (!profile) return null;
-
-            return {
-                xp: profile.xp,
-                level: profile.level,
-                watchTime: profile.watchTime || 0
-            };
-        } catch (err) {
-            this.logger.error('Failed to get user stats', err);
-            return null;
+        if (!profile || profile.level < 50) { // Example requirement
+            throw new Error('Not eligible for prestige');
         }
+
+        return this.prisma.viewerProfile.update({
+            where: { id: profile.id },
+            data: {
+                level: 1,
+                seasonXp: 0,
+                prestigeLevel: { increment: 1 },
+                // Bonus: Keep skill points or some other perk
+            }
+        });
     }
 }

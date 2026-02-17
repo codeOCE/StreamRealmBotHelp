@@ -217,4 +217,23 @@ export class CommandsService {
         this.events.emitCommandUpdate(tenantId);
         return results;
     }
+
+    async deleteAll(tenantId: string) {
+        const count = await this.prisma.command.deleteMany({
+            where: {
+                tenantId,
+                isBuiltIn: false
+            }
+        });
+
+        await this.auditService.log({
+            tenantId,
+            action: 'COMMAND_BULK_DELETE',
+            actor: 'Dashboard',
+            metadata: { count: count.count }
+        });
+
+        this.events.emitCommandUpdate(tenantId);
+        return count;
+    }
 }

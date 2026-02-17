@@ -10,6 +10,40 @@ export class TwitchApiService {
 
     constructor(private configService: ConfigService) { }
 
+    async refreshUserToken(refreshToken: string) {
+        const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        const clientSecret = this.configService.get<string>('TWITCH_CLIENT_SECRET');
+
+        try {
+            const response = await fetch('https://id.twitch.tv/oauth2/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    client_id: clientId!,
+                    client_secret: clientSecret!,
+                    grant_type: 'refresh_token',
+                    refresh_token: refreshToken
+                })
+            });
+
+            if (!response.ok) {
+                const body = await response.text();
+                this.logger.error(`Failed to refresh user token: ${response.status} - ${body}`);
+                return null;
+            }
+
+            const data = await response.json() as any;
+            return {
+                accessToken: data.access_token,
+                refreshToken: data.refresh_token, // Twitch may return a new refresh token
+                expiresIn: data.expires_in
+            };
+        } catch (err) {
+            this.logger.error('Error refreshing Twitch User Token', err);
+            return null;
+        }
+    }
+
     private async getAppToken() {
         if (this.accessToken && Date.now() < this.expiresAt) {
             return this.accessToken;
@@ -161,13 +195,6 @@ export class TwitchApiService {
         return stream?.viewer_count || 0;
     }
 
-    async getSubscriberCount(broadcasterId: string) {
-        // Note: Helix subscribers endpoint requires user access token or app token with correct scopes.
-        // For sub count, we usually need broadcaster's specific token.
-        // For now, return 0 if we can't get it easily without a user token.
-        // If we have an integration for this tenant, we should use that token.
-        return 0;
-    }
 
     async getChannelInfo(broadcasterId: string) {
         const token = await this.getAppToken();
@@ -225,5 +252,97 @@ export class TwitchApiService {
             this.logger.error(`Helix Fetch Error`, err);
             return { success: false, error: err.message };
         }
+    }
+
+    async getLatestFollower(broadcasterId: string) {
+        const token = await this.getAppToken();
+        if (!token) return null;
+
+        const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+
+        try {
+            // "The list of followers is returned sorted by when they started following the broadcaster, with the most recent followers first."
+            const response = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${broadcasterId}&first=1`, {
+                headers: {
+                    'Client-ID': clientId!,
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            const data = await response.json() as any;
+            return data.data?.[0]?.user_name || 'No followers';
+        } catch (err) {
+            this.logger.error(`Error fetching latest follower for ${broadcasterId}`, err);
+            return 'Unknown';
+        }
+    }
+
+    async getSubscriberCount(broadcasterId: string, accessToken?: string) {
+        if (!accessToken) return 0; // Requires user token with channel:read:subscriptions
+
+        const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+
+        try {
+            const response = await fetch(`https://api.twitch.tv/helix/subscriptions?broadcaster_id=${broadcasterId}&first=1`, {
+                headers: {
+                    'Client-ID': clientId!,
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+            });
+
+            if (response.status === 401 || response.status === 403) return -1; // Auth failed
+
+            const data = await response.json() as any;
+            return data.total || 0;
+        } catch (err) {
+            this.logger.error(`Error fetching sub count for ${broadcasterId}`, err);
+            return 0;
+        }
+    }
+
+    async updateChannelInfo(broadcasterId: string, title?: string, game?: string, accessToken?: string) {
+        if (!accessToken) return { success: false, error: 'Missing access token' };
+
+        const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        const body: any = {};
+        if (title) body.title = title;
+        if (game) body.game_id = await this.getGameId(game, accessToken) || undefined; // Need to resolve game name to ID
+
+        if (Object.keys(body).length === 0) return { success: false, error: 'No updates provided' };
+
+        try {
+            const response = await fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${broadcasterId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Client-ID': clientId!,
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(body),
+            });
+
+            if (!response.ok) {
+                return { success: false, error: await response.text() };
+            }
+
+            return { success: true };
+        } catch (err) {
+            this.logger.error(`Error updating channel info for ${broadcasterId}`, err);
+            return { success: false, error: err.message };
+        }
+    }
+
+    private async getGameId(gameName: string, accessToken: string): Promise<string | null> {
+        const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        try {
+            const response = await fetch(`https://api.twitch.tv/helix/games?name=${encodeURIComponent(gameName)}`, {
+                headers: {
+                    'Client-ID': clientId!,
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+            });
+            const data = await response.json() as any;
+            return data.data?.[0]?.id || null;
+        } catch { return null; }
     }
 }

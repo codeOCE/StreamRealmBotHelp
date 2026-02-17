@@ -1,0 +1,1458 @@
+[2026-02-16T14:01:07.834Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"twitter","responses":["Follow code on twitter: https://www.twitter.com/codeOCE"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Follow code on twitter: https://www.twitter.com/codeOCE","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.838Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"prime","responses":["Subscribe to code by using your free Twitch Prime Sub. https://subs.twitch.tv/codeOCE Don't have prime no worries. Get a FREE trial NOW. https://amzn.to/2ZG2MDb"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Subscribe to code by using your free Twitch Prime Sub. https://subs.twitch.tv/codeOCE Don't have prime no worries. Get a FREE trial NOW. https://amzn.to/2ZG2MDb","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.841Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"schedule","responses":["look its a work in progress.... maybe forever 🤷 "],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"look its a work in progress.... maybe forever 🤷 ","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.845Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"discord","responses":["Come and join the code discord community! Have a chat, find teammates and trades, and have some friendly banter :) https://discord.gg/VPNDBGs"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Come and join the code discord community! Have a chat, find teammates and trades, and have some friendly banter :) https://discord.gg/VPNDBGs","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.849Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"lurk","responses":["codeLurk Thank you so much for the lurk @{user}! It really helps support the channel codeocLove"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":0,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"codeLurk Thank you so much for the lurk ${user}! It really helps support the channel codeocLove","conversions":[{"from":"${user}","to":"@{user}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.851Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"shun","responses":["THE NON BELIEVER HAS BEEN SHUNNED!"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"THE NON BELIEVER HAS BEEN SHUNNED!","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.854Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"love","responses":["There is a ${random.1-100}% chance for love between @{user} and @{args[0]} <3"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"There is a ${random.1-100}% chance for love between ${sender} and ${touser} <3","conversions":[{"from":"${sender}","to":"@{user}"},{"from":"${touser}","to":"@{args[0]}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.857Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"yeet","responses":["YEET"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"YEET","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.860Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"watchtime","responses":["@{user} has spent ${user.time_online} being bored in code's stream! LUL"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${user} has spent ${user.time_online} being bored in code's stream! LUL","conversions":[{"from":"${user}","to":"@{user}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.864Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"steam","responses":["https://steamcommunity.com/id/codeOCE"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"https://steamcommunity.com/id/codeOCE","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.866Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"birds","responses":["Shhhhh, be careful... The Birds Work for the Bourgeoisie!"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Shhhhh, be careful... The Birds Work for the Bourgeoisie!","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.870Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"vibecheck","responses":["@{args[0]}'s vibe is a solid ${random.1-100}/100"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${touser}'s vibe is a solid ${random.1-100}/100","conversions":[{"from":"${touser}","to":"@{args[0]}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.873Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"song","responses":["Current Song: {api:https://spotify.aidenwallis.co.uk/u/6011451cadffb91b3c98f252}"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":30,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Current Song: ${customapi.https://spotify.aidenwallis.co.uk/u/6011451cadffb91b3c98f252}","conversions":[{"from":"${customapi.https://spotify.aidenwallis.co.uk/u/6011451cadffb91b3c98f252}","to":"{api:https://spotify.aidenwallis.co.uk/u/6011451cadffb91b3c98f252}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.876Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"tiktok","responses":["That's right, your boy code has become cringe and created a TikTok KEKW You might wanna check it out. https://www.tiktok.com/@codeoce.tv"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"That's right, your boy code has become cringe and created a TikTok KEKW You might wanna check it out. https://www.tiktok.com/@codeoce.tv","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.879Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"yeahnah","responses":["nah yeah"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"nah yeah","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.881Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"nou","responses":["no u, @{user}"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"no u, ${user}","conversions":[{"from":"${user}","to":"@{user}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.884Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"energy","responses":["@{user} is sending ${random.1-100}% of their energy to code. LETS GOOOO!!!!"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":10,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${sender} is sending ${random.1-100}% of their energy to code. LETS GOOOO!!!!","conversions":[{"from":"${sender}","to":"@{user}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.887Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"specs","responses":["Ryzen 7 3700X, MSI 6700XT GAMING X, 16GB DDR4 RAM"],"responseType":"SAY","userLevel":"viewer","enabled":false,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Ryzen 7 3700X, MSI 6700XT GAMING X, 16GB DDR4 RAM","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.890Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"shoutout","responses":["Everyone please check out {args[0]}, this legend is supporting my stream so it'd be awesome if you could help me do the same. They were recently seen playing ${game {args[0]}} at https://twitch.tv/${channel {args[0]}} FrogChamp codeocLove"],"responseType":"SAY","userLevel":"moderator","enabled":true,"cooldown":10,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Everyone please check out ${1}, this legend is supporting my stream so it'd be awesome if you could help me do the same. They were recently seen playing ${game ${1}} at https://twitch.tv/${channel ${1}} FrogChamp codeocLove","conversions":[{"from":"${1}","to":"{args[0]}"},{"from":"${game ${1}","to":"${game {args[0]}"},{"from":"${channel ${1}","to":"${channel {args[0]}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.893Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"techd","responses":["Codgers Error 404: There appears to be an error in Code's code at the moment... please hold on while he fixes the stream! peepoPooPoo Codgers"],"responseType":"SAY","userLevel":"moderator","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Codgers Error 404: There appears to be an error in Code's code at the moment... please hold on while he fixes the stream! peepoPooPoo Codgers","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.896Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"bttv","responses":["BetterTTV and FrankerFaceZ are browser extentions that allow you to use even MORE emotes (and also give you more control over your twitch experience)! Download them here: https://betterttv.com/ https://www.frankerfacez.com/"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"BetterTTV and FrankerFaceZ are browser extentions that allow you to use even MORE emotes (and also give you more control over your twitch experience)! Download them here: https://betterttv.com/ https://www.frankerfacez.com/","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.899Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"lork","responses":["${redeem lork}"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${redeem lork}","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.901Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"quote1","responses":["\"we will win this game, im speaking it into existance - fuck\" -Code 2021"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"\"we will win this game, im speaking it into existance - fuck\" -Code 2021","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.905Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"raid","responses":["codeocLove codeocLove </> CODE RAID </> codeocLove codeocLove"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"codeocLove codeocLove </> CODE RAID </> codeocLove codeocLove","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.908Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"riot","responses":["code#frog"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"code#frog","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.911Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"followers","responses":["code currently has ${channel.followers} froggies following his channel codeocLove"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"code currently has ${channel.followers} froggies following his channel codeocLove","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.913Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"loser","responses":["You're a loser PartyHat codeHype 👏 You're a loser PartyHat codeHype 👏 You're a loser PartyHat codeHype 👏 You're a loser PartyHat codeHype 👏 You're a loser PartyHat codeHype 👏"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"You're a loser PartyHat codeHype 👏 You're a loser PartyHat codeHype 👏 You're a loser PartyHat codeHype 👏 You're a loser PartyHat codeHype 👏 You're a loser PartyHat codeHype 👏","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.916Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"newvid","responses":["Check out my new vid here! https://youtu.be/WKekv7jErls codeocLove"],"responseType":"SAY","userLevel":"viewer","enabled":false,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Check out my new vid here! https://youtu.be/WKekv7jErls codeocLove","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.919Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"yourmum","responses":["no your mum"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":0,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"no your mum","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.922Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"socials","responses":["https://linktr.ee/codeoce"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"https://linktr.ee/codeoce","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.925Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"kiss","responses":["@{user} lands a big kiss on @{args[0]}'s cheek 💋 codeocLove"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${sender} lands a big kiss on ${touser}'s cheek 💋 codeocLove","conversions":[{"from":"${sender}","to":"@{user}"},{"from":"${touser}","to":"@{args[0]}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.927Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"hug","responses":["@{user} hops on over to give @{args[0]} a huggggggggggge warm hug BearHug codeocLove"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${sender} hops on over to give ${touser} a huggggggggggge warm hug BearHug codeocLove","conversions":[{"from":"${sender}","to":"@{user}"},{"from":"${touser}","to":"@{args[0]}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.930Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"cracked","responses":["@{args[0]} is ${random.1-100}% cracked."],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${touser} is ${random.1-100}% cracked.","conversions":[{"from":"${touser}","to":"@{args[0]}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.933Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"gocode","responses":["peepoClap GO CODE peepoClap GO CODE peepoClap GO CODE peepoClap"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"peepoClap GO CODE peepoClap GO CODE peepoClap GO CODE peepoClap","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.936Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"famous","responses":["BOTTING"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"BOTTING","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.938Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"thisisfine","responses":["ThisIsFine"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"ThisIsFine","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.941Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"hellothere","responses":["General Kenobi"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"General Kenobi","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.944Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"juicd","responses":["code is proudly affiliated with JUICD ENERGY codeocSheesh get a cheeky 10% off your order using \"codeOCE\" at checkout or by clicking this link https://juicd.energy/discount/CODEOCE PogYeah"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"code is proudly affiliated with JUICD ENERGY codeocSheesh get a cheeky 10% off your order using \"codeOCE\" at checkout or by clicking this link https://juicd.energy/discount/CODEOCE PogYeah","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.947Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"throne","responses":["Check out my Throne Wishlist here! https://throne.me/u/codeoce"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"Check out my Throne Wishlist here! https://throne.me/u/codeoce","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.950Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"offline","responses":["@{user} has spent ${user.time_offline} looking at code's amazing offline screen! KEKW"],"responseType":"SAY","userLevel":"viewer","enabled":false,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${user} has spent ${user.time_offline} looking at code's amazing offline screen! KEKW","conversions":[{"from":"${user}","to":"@{user}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.952Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"ween","responses":["$(sender) is a $(random.0-100)% ween... OMEGALUL\n"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":5,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"$(sender) is a $(random.0-100)% ween... OMEGALUL\n","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.955Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"valrank","responses":["@$(1|$(sender)), $(eval response = `$(urlfetch json https://api.henrikdev.xyz/valorant/v1/mmr/ap/codeoce/ttv)`; try { json = JSON.parse(response); currenttierpatched = json.data.currenttierpatched; ranking_in_tier = json.data.ranking_in_tier; currenttierpatched && ranking_in_tier == null ? \"None\" : \"\" + currenttierpatched + \" - \" + ranking_in_tier + \"RR\"; } catch(e){`${e}: ${response}`.substr(0, 400)})"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":30,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"@$(1|$(sender)), $(eval response = `$(urlfetch json https://api.henrikdev.xyz/valorant/v1/mmr/ap/codeoce/ttv)`; try { json = JSON.parse(response); currenttierpatched = json.data.currenttierpatched; ranking_in_tier = json.data.ranking_in_tier; currenttierpatched && ranking_in_tier == null ? \"None\" : \"\" + currenttierpatched + \" - \" + ranking_in_tier + \"RR\"; } catch(e){`${e}: ${response}`.substr(0, 400)})","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.958Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"unlork","responses":["danke fo lorking, welcome back"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":5,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"danke fo lorking, welcome back","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.960Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"time","responses":["$(time Australia/Adelaide h:mm A)\n"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":5,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"$(time Australia/Adelaide h:mm A)\n","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.964Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"kissrightonthemouth","responses":["$(user) waddles over and smooches $(1|$(sender)) on the shmacker <3"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":30,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"$(user) waddles over and smooches $(1|$(sender)) on the shmacker <3","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.966Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"itsafrog","responses":["$(eval a=$(urlfetch json https://pastebin.com/raw/35StLJ3K);a[Math.floor(Math.random()*a.length)])"],"responseType":"SAY","userLevel":"moderator","enabled":false,"cooldown":5,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"$(eval a=$(urlfetch json https://pastebin.com/raw/35StLJ3K);a[Math.floor(Math.random()*a.length)])","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.969Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"iq","responses":["$(sender) is a $(random.pick $(urlfetch https://pastebin.com/raw/jM64j6Tq))"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":5,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"$(sender) is a $(random.pick $(urlfetch https://pastebin.com/raw/jM64j6Tq))","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.972Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"frog","responses":["$(customapi https://frogclanker.codeoce.com/fact)\n"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":20,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"$(customapi https://frogclanker.codeoce.com/fact)\n","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.975Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"cap","responses":["That last message was $(random.0-100)% cap FrogeStudy\n"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":5,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"That last message was $(random.0-100)% cap FrogeStudy\n","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.978Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"built","responses":["$(sender) is $(random.0-100)% built different WeirdChamp\n"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":5,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"$(sender) is $(random.0-100)% built different WeirdChamp\n","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.981Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"rank","responses":["${if {args[0]};{api:https://rank.codeoce.com/rank?channel={channel}&game={args[0]}};{api:https://rank.codeoce.com/rank?channel={channel}}}"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":5,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${if ${1};${urlfetch https://rank.codeoce.com/rank?channel=${channel.name}&game=${1}};${urlfetch https://rank.codeoce.com/rank?channel=${channel.name}}}","conversions":[{"from":"${if ${1}","to":"${if {args[0]}"},{"from":"${urlfetch https://rank.codeoce.com/rank?channel=${channel.name}","to":"{api:https://rank.codeoce.com/rank?channel={channel}"},{"from":"${1}","to":"{args[0]}"},{"from":"${urlfetch https://rank.codeoce.com/rank?channel=${channel.name}","to":"{api:https://rank.codeoce.com/rank?channel={channel}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.984Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"play","responses":["!play"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":85,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"!play","conversions":[]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.987Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"setid","responses":["{api:https://rank.codeoce.com/set?channel={channel}&game={args[0]}&id={args[1]}&modes={args[2]}}"],"responseType":"SAY","userLevel":"moderator","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${urlfetch https://rank.codeoce.com/set?channel=${channel.name}&game=${1}&id=${2}&modes=${3}}","conversions":[{"from":"${urlfetch https://rank.codeoce.com/set?channel=${channel.name}","to":"{api:https://rank.codeoce.com/set?channel={channel}"},{"from":"${1}","to":"{args[0]}"},{"from":"${2}","to":"{args[1]}"},{"from":"${3}","to":"{args[2]}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+
+[2026-02-16T14:01:07.990Z] Error importing command: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+Command: {"trigger":"debug","responses":["{api:https://rank.codeoce.com/rank?channel={channel}&debug=true}"],"responseType":"SAY","userLevel":"viewer","enabled":true,"cooldown":15,"description":"Imported from StreamElements","isBuiltIn":false,"originalResponse":"${urlfetch https://rank.codeoce.com/rank?channel=${channel.name}&debug=true}","conversions":[{"from":"${urlfetch https://rank.codeoce.com/rank?channel=${channel.name}","to":"{api:https://rank.codeoce.com/rank?channel={channel}"}]}
+Stack: PrismaClientKnownRequestError: 
+Invalid `this.prisma.command.create()` invocation in
+C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:43
+
+  81 else if (level === 'broadcaster' || level === 'owner') userLevel = UserLevel.BROADCASTER;
+  82 
+  83 // Create command
+→ 84 await this.prisma.command.create(
+Unique constraint failed on the fields: (`tenantId`,`trigger`)
+    at $n.handleRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async ImportService.processImport (C:\Users\theco\.gemini\antigravity\scratch\stream-realm\apps\api\src\bot\import.service.ts:84:17)
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-execution-context.js:46:28
+    at async C:\Users\theco\.gemini\antigravity\scratch\stream-realm\node_modules\@nestjs\core\router\router-proxy.js:9:17
+

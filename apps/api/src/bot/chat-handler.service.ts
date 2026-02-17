@@ -4,10 +4,12 @@ import { TwitchApiService } from './twitch-api.service';
 import { BotEventsGateway } from './bot-events.gateway';
 import { RateLimiterService } from './rate-limiter.service';
 import { ModerationService } from './moderation.service';
-import { XPService } from './xp.service';
+import { XpService } from './xp.service';
 import { VariableService } from './variable.service';
 import { AuditService } from './audit.service';
 import { TimerService } from './timer.service';
+import { BattleService } from './battle.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as tmi from 'tmi.js';
 
 @Injectable()
@@ -20,12 +22,14 @@ export class ChatHandlerService {
         private prisma: PrismaService,
         private rateLimiter: RateLimiterService,
         private moderation: ModerationService,
-        private xp: XPService,
+        private xp: XpService,
         private variableService: VariableService,
         private timerService: TimerService,
         private twitchApiService: TwitchApiService,
         private botEvents: BotEventsGateway,
         private auditService: AuditService,
+        private eventEmitter: EventEmitter2,
+        private battleService: BattleService,
     ) { }
 
     async handleMessage(channelName: string, userstate: tmi.ChatUserstate, message: string, client: tmi.Client) {
@@ -74,9 +78,16 @@ export class ChatHandlerService {
             }
         }
 
-        // 3. XP Tracking (Non-blocking)
-        this.xp.trackActivity(tenantId, userstate['user-id']!, userstate['display-name'] || userstate.username!)
-            .catch(err => this.logger.error(`[MSG] XP Tracking failed`, err));
+        // 3. XP Tracking & Achievements (Non-blocking)
+        const userId = userstate['user-id']!;
+        this.xp.addXp(tenantId, userId, 10) // 10 XP per message
+            .catch(err => this.logger.error(`[MSG] XP Add failed`, err));
+
+        this.eventEmitter.emit('chat.message', {
+            tenantId,
+            userId,
+            messageCount: 1 // Increment logic should happen in service listener if needed, or we just emit raw
+        });
 
         // 4. Timer Check (Non-blocking)
         this.timerService.handleMessage(tenantId, channelName)
@@ -89,6 +100,9 @@ export class ChatHandlerService {
 
     private async handleCommand(tenant: any, message: string, userstate: tmi.ChatUserstate, channelName: string) {
         const tenantId = tenant.id;
+        const broadcasterId = tenant.twitchId; // FIX: Define this early
+        const botUsername = tenant.botUsername || 'global'; // FIX: Define this early
+
         const parts = message.split(' ');
         const trigger = parts[0].toLowerCase().substring(1);
         const args = parts.slice(1);
@@ -148,7 +162,7 @@ export class ChatHandlerService {
                     user: userstate['display-name'] || userstate.username!,
                     userId: userstate['user-id']!,
                     channel: channelName,
-                    broadcasterId: tenant.twitchId,
+                    broadcasterId: broadcasterId, // FIX: Use the variable we defined
                     count: command.usages + 1,
                     args,
                     msgId: userstate.id
@@ -163,151 +177,210 @@ export class ChatHandlerService {
 
                         switch (responseType) {
                             case 'MENTION':
-                                await this.rateLimiter.enqueueMessage(channelName, `@${context.user}, ${parsedMessage}`, context.broadcasterId, tenant.botUsername || 'global');
+                                // FIX: Pass broadcasterId and botUsername
+                                await this.rateLimiter.enqueueMessage(
+                                    channelName,
+                                    `@${context.user}, ${parsedMessage}`,
+                                    broadcasterId,
+                                    botUsername
+                                );
                                 break;
                             case 'REPLY':
-                                // Using reply tag if userstate.id is available, otherwise fallback to mention
-                                if (userstate.id) {
-                                    await this.rateLimiter.enqueueMessage(channelName, parsedMessage, context.broadcasterId, tenant.botUsername || 'global', userstate.id);
-                                } else {
-                                    await this.rateLimiter.enqueueMessage(channelName, `@${context.user}, ${parsedMessage}`, context.broadcasterId, tenant.botUsername || 'global');
-                                }
+                                // FIX: Pass broadcasterId and botUsername
+                                await this.rateLimiter.enqueueMessage(
+                                    channelName,
+                                    parsedMessage,
+                                    broadcasterId,
+                                    botUsername,
+                                    context.msgId
+                                );
                                 break;
-                            case 'WHISPER':
-                                // Note: whispers are sent directly to the user, not the channel
-                                await this.rateLimiter.enqueueWhisper(context.user, parsedMessage);
-                                break;
-                            case 'SAY':
                             default:
-                                await this.rateLimiter.enqueueMessage(channelName, parsedMessage, context.broadcasterId, tenant.botUsername || 'global');
+                                // FIX: Pass broadcasterId and botUsername
+                                await this.rateLimiter.enqueueMessage(
+                                    channelName,
+                                    parsedMessage,
+                                    broadcasterId,
+                                    botUsername
+                                );
                                 break;
                         }
                     }
                 }
 
                 this.cooldowns.set(cooldownKey, now);
+                this.logger.log(`[CMD] Executed: !${trigger} (Usage: ${command.usages + 1})`);
             }
         }
     }
 
-    private async logChat(tenantId: string, userstate: tmi.ChatUserstate, message: string) {
-        try {
-            await this.prisma.chatLog.create({
-                data: {
-                    tenantId,
-                    viewerId: userstate['user-id']!,
-                    message,
-                }
-            });
-        } catch (err) {
-            this.logger.error('Failed to log chat', err);
+    private hasPermission(userstate: tmi.ChatUserstate, requiredLevel: string): boolean {
+        const isBroadcaster = userstate.badges?.broadcaster === '1';
+        const isMod = userstate.mod || userstate.badges?.moderator === '1';
+        const isVip = userstate.badges?.vip === '1';
+        const isSub = userstate.subscriber || !!userstate.badges?.subscriber;
+
+        switch (requiredLevel) {
+            case 'BROADCASTER':
+                return isBroadcaster;
+            case 'MODERATOR':
+                return isBroadcaster || isMod;
+            case 'VIP':
+                return isBroadcaster || isMod || isVip;
+            case 'SUBSCRIBER':
+                return isBroadcaster || isMod || isVip || isSub;
+            case 'VIEWER':
+            default:
+                return true;
         }
     }
 
-    private hasPermission(userstate: tmi.ChatUserstate, requiredLevel: string): boolean {
-        const levels = ['VIEWER', 'SUBSCRIBER', 'MODERATOR', 'BROADCASTER'];
-        const userLevel = userstate.badges?.broadcaster ? 'BROADCASTER' : userstate.mod ? 'MODERATOR' : userstate.subscriber ? 'SUBSCRIBER' : 'VIEWER';
-        return levels.indexOf(userLevel) >= levels.indexOf(requiredLevel);
-    }
-
-    private async getTenantIdByTwitchId(twitchId: string): Promise<string> {
-        const tenant = await this.prisma.tenant.findUnique({ where: { twitchId } });
-        return tenant?.id!;
+    private async logChat(tenantId: string, userstate: tmi.ChatUserstate, message: string) {
+        await (this.prisma as any).chatLog.create({
+            data: {
+                tenantId,
+                userId: userstate['user-id']!,
+                username: userstate['display-name'] || userstate.username!,
+                message,
+            },
+        });
     }
 
     private async handleBuiltInCommand(trigger: string, args: string[], userstate: tmi.ChatUserstate, channelName: string, tenant: any): Promise<boolean> {
         const tenantId = tenant.id;
         const broadcasterId = tenant.twitchId;
         const username = userstate['display-name'] || userstate.username!;
+        const userId = userstate['user-id']!;
 
-        // Check if the command exists and is enabled in the database (Built-in commands should be seeded)
+        // Check if the built-in command exists and is enabled in DB
         const command = await (this.prisma.command as any).findFirst({
-            where: { tenantId, trigger, isBuiltIn: true, enabled: true }
+            where: {
+                tenantId,
+                trigger,
+                isBuiltIn: true,
+                enabled: true
+            }
         });
 
-        if (!command) return false;
+        if (!command) {
+            this.logger.log(`[CMD] Built-in command "${trigger}" not found or disabled in DB.`);
+            return false;
+        }
 
+        // Execute Built-In Logic
         switch (trigger) {
             case 'uptime': {
                 const stream = await this.twitchApiService.getStreamInfo(channelName);
                 if (stream) {
-                    const startedAt = new Date(stream.started_at).getTime();
-                    const diff = Date.now() - startedAt;
-                    const h = Math.floor(diff / 3600000);
-                    const m = Math.floor((diff % 3600000) / 60000);
-                    await this.rateLimiter.enqueueMessage(channelName, `⏱️ ${channelName.replace('#', '')} has been live for ${h}h ${m}m!`, broadcasterId, tenant.botUsername || 'global');
+                    const startedAt = new Date(stream.started_at);
+                    const now = new Date();
+                    const diff = now.getTime() - startedAt.getTime();
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    await this.rateLimiter.enqueueMessage(channelName, `🎮 Stream has been live for ${hours}h ${minutes}m`, broadcasterId, tenant.botUsername || 'global');
                 } else {
-                    await this.rateLimiter.enqueueMessage(channelName, `⏱️ The stream is currently offline.`, broadcasterId, tenant.botUsername || 'global');
+                    await this.rateLimiter.enqueueMessage(channelName, '🔴 Stream is currently offline.', broadcasterId, tenant.botUsername || 'global');
                 }
                 break;
             }
 
-            case 'xp':
-            case 'stats':
-                const userXp = await this.xp.getUserStats(tenantId, userstate['user-id']!);
-                if (userXp) {
-                    await this.rateLimiter.enqueueMessage(channelName, `✨ ${username}, you are Level ${userXp.level} with ${userXp.xp.toLocaleString()} total XP and ${userXp.watchTime} minutes watched!`, broadcasterId, tenant.botUsername || 'global');
-                } else {
-                    await this.rateLimiter.enqueueMessage(channelName, `✨ ${username}, you haven't earned any XP yet. Stick around to start leveling up!`, broadcasterId, tenant.botUsername || 'global');
+            case 'game':
+            case 'title': {
+                const info = await this.twitchApiService.getChannelInfo(broadcasterId);
+                if (info) {
+                    if (trigger === 'game') {
+                        await this.rateLimiter.enqueueMessage(channelName, `🎮 Current game: ${info.game_name || 'Unknown'}`, broadcasterId, tenant.botUsername || 'global');
+                    } else {
+                        await this.rateLimiter.enqueueMessage(channelName, `📺 Current title: ${info.title}`, broadcasterId, tenant.botUsername || 'global');
+                    }
                 }
                 break;
+            }
+
+            case 'stats':
+            case 'xp': {
+                const user = await (this.prisma as any).viewer.findUnique({
+                    where: {
+                        tenantId_twitchId: {
+                            tenantId,
+                            twitchId: userId
+                        }
+                    }
+                });
+
+                if (user) {
+                    await this.rateLimiter.enqueueMessage(channelName, `${username} | Level: ${user.level} | XP: ${user.xp} | Watchtime: ${Math.floor(user.watchTime / 60)}h`, broadcasterId, tenant.botUsername || 'global');
+                } else {
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, you don't have any stats yet. Start watching to earn XP!`, broadcasterId, tenant.botUsername || 'global');
+                }
+                break;
+            }
 
             case 'top':
-            case 'leaderboard':
-                const topUsers = await this.xp.getTopUsers(tenantId, 5);
-                const leaderboard = topUsers.map((u, i) => `${i + 1}. ${u.username} (Lvl ${u.level})`).join(' | ');
+            case 'leaderboard': {
+                const topUsers = await (this.prisma as any).viewer.findMany({
+                    where: { tenantId },
+                    orderBy: { xp: 'desc' },
+                    take: 3
+                });
+                const leaderboard = topUsers.map((u: any, idx: number) => `${idx + 1}. ${u.displayName} (${u.xp} XP)`).join(' | ');
                 await this.rateLimiter.enqueueMessage(channelName, `🏆 Top XP Leaders: ${leaderboard}`, broadcasterId, tenant.botUsername || 'global');
                 break;
+            }
 
-            case 'watchtime':
-                const stats = await this.xp.getUserStats(tenantId, userstate['user-id']!);
-                if (stats) {
-                    const hours = Math.floor(stats.watchTime / 60);
-                    const mins = stats.watchTime % 60;
-                    await this.rateLimiter.enqueueMessage(channelName, `🕒 ${username}, you have watched for ${hours > 0 ? `${hours}h ` : ''}${mins}m!`, broadcasterId, tenant.botUsername || 'global');
+            case 'watchtime': {
+                const user = await (this.prisma as any).viewer.findUnique({
+                    where: {
+                        tenantId_twitchId: {
+                            tenantId,
+                            twitchId: userId
+                        }
+                    }
+                });
+
+                if (user) {
+                    const hours = Math.floor(user.watchTime / 60);
+                    const minutes = user.watchTime % 60;
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, you have watched for ${hours}h ${minutes}m`, broadcasterId, tenant.botUsername || 'global');
+                } else {
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, you don't have any watchtime yet!`, broadcasterId, tenant.botUsername || 'global');
                 }
                 break;
+            }
 
             case 'followage': {
-                const tenantRecord = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
-                const follow = await this.twitchApiService.getUserFollow(tenantRecord!.twitchId, userstate['user-id']!);
+                const follow = await this.twitchApiService.getUserFollow(broadcasterId, userId);
                 if (follow) {
                     const followedAt = new Date(follow.followed_at);
-                    const diff = Date.now() - followedAt.getTime();
-                    const days = Math.floor(diff / 86400000);
-                    await this.rateLimiter.enqueueMessage(channelName, `📅 ${username}, you have been following for ${days} days! (Since ${followedAt.toLocaleDateString()})`, broadcasterId, tenant.botUsername || 'global');
+                    const now = new Date();
+                    const diff = now.getTime() - followedAt.getTime();
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, you have been following for ${days} days!`, broadcasterId, tenant.botUsername || 'global');
                 } else {
-                    await this.rateLimiter.enqueueMessage(channelName, `📅 ${username}, you are not following yet!`, broadcasterId, tenant.botUsername || 'global');
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, you are not following yet!`, broadcasterId, tenant.botUsername || 'global');
                 }
                 break;
             }
 
-            case 'game': {
-                const stream = await this.twitchApiService.getStreamInfo(channelName);
-                await this.rateLimiter.enqueueMessage(channelName, `🎮 Current Game: ${stream?.game_name || 'Offline/Unknown'}`, broadcasterId, tenant.botUsername || 'global');
-                break;
-            }
-
-            case 'title': {
-                const stream = await this.twitchApiService.getStreamInfo(channelName);
-                await this.rateLimiter.enqueueMessage(channelName, `🎬 Stream Title: ${stream?.title || 'Offline/No Title'}`, broadcasterId, tenant.botUsername || 'global');
-                break;
-            }
-
-            case 'socials':
-                await this.rateLimiter.enqueueMessage(channelName, `🔗 Stay connected! Follow us on Twitter and Instagram @StreamRealm_Mock`, broadcasterId, tenant.botUsername || 'global');
-                break;
-
             case 'commands':
-            case 'help':
-                const customCommands = await this.prisma.command.findMany({
-                    where: { tenantId, enabled: true, isBuiltIn: false } as any,
-                    select: { trigger: true }
+            case 'help': {
+                const customCommands = await (this.prisma.command as any).findMany({
+                    where: {
+                        tenantId,
+                        enabled: true,
+                        isBuiltIn: false
+                    }
                 });
-                const builtInList = ['uptime', 'xp', 'stats', 'top', 'leaderboard', 'watchtime', 'followage', 'game', 'title', 'socials', 'commands', 'help', 'ping', 'shoutout', 'so'];
-                const listStr = [...builtInList, ...customCommands.map(c => c.trigger)].map(t => `!${t}`).join(', ');
-                await this.rateLimiter.enqueueMessage(channelName, `📜 Available commands: ${listStr.length > 200 ? listStr.substring(0, 197) + '...' : listStr}`, broadcasterId, tenant.botUsername || 'global');
+                const triggers = customCommands.map((c: any) => `!${c.trigger}`).join(', ');
+                await this.rateLimiter.enqueueMessage(channelName, `Available commands: !uptime, !game, !title, !stats, !xp, !top, !leaderboard, !watchtime, !followage, !battle, !accept, !decline, !8ball, !dadjoke, !fact, !socials, !ping ${triggers ? `| Custom: ${triggers}` : ''}`, broadcasterId, tenant.botUsername || 'global');
                 break;
+            }
+
+            case 'socials': {
+                // Fetch from tenant settings
+                await this.rateLimiter.enqueueMessage(channelName, `Follow us on our socials! 🌐 [Add your social links in the dashboard]`, broadcasterId, tenant.botUsername || 'global');
+                break;
+            }
 
             case 'ping':
                 await this.rateLimiter.enqueueMessage(channelName, `🏓 Pong! StreamRealm Bot is online and operational. [Uptime: ${this.getUptime()}]`, broadcasterId, tenant.botUsername || 'global');
@@ -334,13 +407,103 @@ export class ChatHandlerService {
                 const jokes = [
                     "I'm afraid for the calendar. Its days are numbered.",
                     "Why do fathers take an extra pair of socks when they go golfing? In case they get a hole in one!",
-                    "What’s the best thing about Switzerland? I don’t know, but the flag is a big plus.",
+                    "What's the best thing about Switzerland? I don't know, but the flag is a big plus.",
                     "Why don't skeletons fight each other? They don't have the guts.",
                     "I used to be a baker, but I couldn't make enough dough.",
                     "I'm on a seafood diet. I see food and I eat it."
                 ];
                 const joke = jokes[Math.floor(Math.random() * jokes.length)];
                 await this.rateLimiter.enqueueMessage(channelName, joke, broadcasterId, tenant.botUsername || 'global');
+                break;
+            }
+
+            case 'battle': {
+                const opponent = args[0]?.replace('@', '');
+                if (!opponent) {
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, usage: !battle @username`, broadcasterId, tenant.botUsername || 'global');
+                    break;
+                }
+
+                if (opponent.toLowerCase() === username.toLowerCase()) {
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, you can't battle yourself! 🤔`, broadcasterId, tenant.botUsername || 'global');
+                    break;
+                }
+
+                try {
+                    const created = this.battleService.createChallenge(username, opponent, tenantId);
+                    if (created) {
+                        await this.rateLimiter.enqueueMessage(
+                            channelName,
+                            `⚔️ ${username} has challenged ${opponent} to a battle! @${opponent}, type !accept or !decline (90s)`,
+                            broadcasterId,
+                            tenant.botUsername || 'global'
+                        );
+                    } else {
+                        await this.rateLimiter.enqueueMessage(
+                            channelName,
+                            `${username}, ${opponent} already has a pending challenge!`,
+                            broadcasterId,
+                            tenant.botUsername || 'global'
+                        );
+                    }
+                } catch (err) {
+                    this.logger.error('Battle challenge error:', err);
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, failed to create challenge!`, broadcasterId, tenant.botUsername || 'global');
+                }
+                break;
+            }
+
+            case 'accept': {
+                try {
+                    const result = await this.battleService.acceptChallenge(username, tenantId);
+                    if (!result) {
+                        await this.rateLimiter.enqueueMessage(
+                            channelName,
+                            `${username}, you don't have any pending challenges!`,
+                            broadcasterId,
+                            tenant.botUsername || 'global'
+                        );
+                    } else if (result.expired) {
+                        await this.rateLimiter.enqueueMessage(
+                            channelName,
+                            `${username}, your challenge has expired!`,
+                            broadcasterId,
+                            tenant.botUsername || 'global'
+                        );
+                    } else if ('winner' in result) {
+                        // Type guard: result has battle data
+                        const emoji = result.winner === username ? '🏆' : '💀';
+                        await this.rateLimiter.enqueueMessage(
+                            channelName,
+                            `${emoji} ${result.battle.challenger.username}(${result.challengerRoll}) vs ${result.battle.opponent.username}(${result.opponentRoll}) - ${result.winner} wins! [MMR: ${result.winner === username ? result.opponentNewMMR : result.challengerNewMMR} ${result.mmrChange > 0 ? '+' : ''}${result.winner === username ? result.mmrChange : -result.mmrChange}]`,
+                            broadcasterId,
+                            tenant.botUsername || 'global'
+                        );
+                    }
+                } catch (err) {
+                    this.logger.error('Accept battle error:', err);
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, failed to accept battle!`, broadcasterId, tenant.botUsername || 'global');
+                }
+                break;
+            }
+
+            case 'decline': {
+                const challenge = this.battleService.declineChallenge(username, tenantId);
+                if (challenge) {
+                    await this.rateLimiter.enqueueMessage(
+                        channelName,
+                        `${username} has declined ${challenge.challenger}'s battle challenge.`,
+                        broadcasterId,
+                        tenant.botUsername || 'global'
+                    );
+                } else {
+                    await this.rateLimiter.enqueueMessage(
+                        channelName,
+                        `${username}, you don't have any pending challenges!`,
+                        broadcasterId,
+                        tenant.botUsername || 'global'
+                    );
+                }
                 break;
             }
 
@@ -380,7 +543,9 @@ export class ChatHandlerService {
                                 responses: [normalizedResponse],
                                 enabled: true,
                                 isBuiltIn: false,
-                                userLevel: 'VIEWER'
+                                userLevel: 'VIEWER',
+                                cooldown: 10,
+                                category: 'General'
                             }
                         });
                         this.botEvents.emitCommandUpdate(tenantId);

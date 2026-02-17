@@ -42,6 +42,29 @@ model Tenant {
   timers          Timer[]
   viewerProfiles  ViewerProfile[]
   integrations    Integration[]
+  
+  // Loyalty System
+  skillNodes      SkillNode[]
+  achievements    Achievement[]
+  seasons         Season[]
+  
+  // Battle System
+  battles         Battle[]
+  
+  onboarding      Onboarding?
+}
+
+model Onboarding {
+  id                  String    @id @default(uuid())
+  tenantId            String    @unique
+  hasLinkedBot        Boolean   @default(false)
+  hasCreatedCommand   Boolean   @default(false)
+  hasEnabledModeration Boolean  @default(false)
+  hasVisitedDashboard Boolean   @default(false)
+  hasImportedCommands Boolean   @default(false)
+  completedAt         DateTime?
+  
+  tenant              Tenant    @relation(fields: [tenantId], references: [id])
 }
 
 model Integration {
@@ -121,9 +144,107 @@ model ViewerProfile {
   points       Int      @default(0)
   username     String
   watchTime    Int      @default(0)
+  
+  // Loyalty System
+  prestigeLevel Int      @default(0)
+  skillPoints   Int      @default(0)
+  seasonXp      Int      @default(0)
+  
+  // Battle System
+  mmr           Int      @default(1000)
+  
+  battlesAsChallenger Battle[] @relation("BattleChallenger")
+  battlesAsOpponent   Battle[] @relation("BattleOpponent")
+  battlesWon          Battle[] @relation("BattleWinner")
+  
+  unlockedSkills       UserSkill[]
+  unlockedAchievements UserAchievement[]
+  
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, twitchUserId])
+}
+
+model SkillNode {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String
+  effectType  String   // e.g., "PASSIVE_XP", "DISCOUNT_GAMBLE", "LUCK_HEIST"
+  effectValue Float
+  cost        Int
+  parentId    String?
+  parent      SkillNode? @relation("SkillTree", fields: [parentId], references: [id])
+  children    SkillNode[] @relation("SkillTree")
+  
+  unlockedBy  UserSkill[]
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+}
+
+model UserSkill {
+  id              String        @id @default(uuid())
+  viewerProfileId String
+  skillNodeId     String
+  unlockedAt      DateTime      @default(now())
+  
+  viewerProfile   ViewerProfile @relation(fields: [viewerProfileId], references: [id])
+  skillNode       SkillNode     @relation(fields: [skillNodeId], references: [id])
+  
+  @@unique([viewerProfileId, skillNodeId])
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String
+  triggerType String   // e.g., "MESSAGE_COUNT", "WATCH_TIME", "RAID_PARTICIPATION"
+  threshold   Int
+  rewardXp    Int
+  icon        String?
+  
+  unlockedBy  UserAchievement[]
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+}
+
+model UserAchievement {
+  id              String        @id @default(uuid())
+  viewerProfileId String
+  achievementId   String
+  unlockedAt      DateTime      @default(now())
+  
+  viewerProfile   ViewerProfile @relation(fields: [viewerProfileId], references: [id])
+  achievement     Achievement   @relation(fields: [achievementId], references: [id])
+  
+  @@unique([viewerProfileId, achievementId])
+}
+
+model Season {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  startDate DateTime
+  endDate   DateTime?
+  isActive  Boolean  @default(true)
+  
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Battle {
+  id              String        @id @default(uuid())
+  tenantId        String
+  challengerId    String
+  opponentId      String
+  challengerRoll  Int
+  opponentRoll    Int
+  winnerId        String
+  mmrChange       Int
+  createdAt       DateTime      @default(now())
+  
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  challenger      ViewerProfile @relation("BattleChallenger", fields: [challengerId], references: [id])
+  opponent        ViewerProfile @relation("BattleOpponent", fields: [opponentId], references: [id])
+  winner          ViewerProfile @relation("BattleWinner", fields: [winnerId], references: [id])
 }
 
 model ChatLog {
@@ -164,6 +285,7 @@ enum PlanTier {
 enum UserLevel {
   VIEWER
   SUBSCRIBER
+  VIP
   MODERATOR
   BROADCASTER
 }

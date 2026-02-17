@@ -1,8 +1,21 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const [user, setUser] = useState<any>(null);
+
+    useEffect(() => {
+        fetch('http://localhost:3001/user/me')
+            .then(res => res.json())
+            .then(data => setUser(data))
+            .catch(err => console.error('Failed to fetch user:', err));
+    }, []);
+
     return (
         <div className="flex h-screen bg-background text-foreground font-sans selection:bg-brand-primary/30">
             {/* Sidebar */}
@@ -24,7 +37,9 @@ export default function DashboardLayout({
                     <SidebarItem href="/dashboard/commands" icon="⌨️" label="Chat Commands" />
                     <SidebarItem href="/dashboard/moderation" icon="🛡️" label="Bot Filters" />
                     <SidebarItem href="/dashboard/timers" icon="⏱️" label="Timers" />
-                    <SidebarItem href="/dashboard/xp" icon="🏆" label="Loyalty" />
+                    <SidebarItem href="/dashboard/loyalty" icon="🏆" label="Loyalty" />
+                    <SidebarItem href="/dashboard/interactions" icon="⚔️" label="Interactions" />
+                    <SidebarItem href="/dashboard/tools" icon="🛠️" label="Tools & Utilities" />
                 </nav>
 
                 <div className="p-4 border-t border-white/[0.05] space-y-4">
@@ -32,11 +47,14 @@ export default function DashboardLayout({
 
                     <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=theco" alt="Avatar" />
+                            <img
+                                src={user?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=guest'}
+                                alt="Avatar"
+                            />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-white truncate">theco</p>
-                            <p className="text-[9px] text-zinc-500 font-bold uppercase truncate">Administrator</p>
+                            <p className="text-xs font-bold text-white truncate">{user?.username || 'Loading...'}</p>
+                            <p className="text-[9px] text-zinc-500 font-bold uppercase truncate">Streamer</p>
                         </div>
                     </div>
                 </div>
@@ -59,11 +77,11 @@ export default function DashboardLayout({
 
                     <div className="flex items-center gap-4">
                         <a
-                            href="http://localhost:3001/auth/twitch"
-                            className="bg-[#9146FF] text-white font-bold text-xs px-5 py-2 rounded-lg hover:bg-[#7d3bd9] transition-all shadow-lg shadow-[#9146FF]/20 flex items-center gap-2"
+                            href="/dashboard/integrations"
+                            className="bg-brand-primary text-white font-bold text-xs px-5 py-2 rounded-lg hover:bg-brand-primary/80 transition-all shadow-lg shadow-brand-primary/20 flex items-center gap-2"
                         >
-                            <span className="text-sm">🟪</span>
-                            Connect with Twitch
+                            <span className="text-sm">🤖</span>
+                            Link Bot
                         </a>
                         <button className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.05] text-zinc-400 hover:text-white transition-all text-sm">
                             🔔

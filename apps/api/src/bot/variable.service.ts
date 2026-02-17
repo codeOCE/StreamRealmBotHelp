@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { TwitchApiService } from './twitch-api.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { SecurityService } from '../common/security/security.service';
 
 export interface ParseContext {
     user: string;
@@ -18,7 +19,8 @@ export class VariableService {
 
     constructor(
         private twitchApi: TwitchApiService,
-        private prisma: PrismaService
+        private prisma: PrismaService,
+        private security: SecurityService
     ) { }
 
     /**
@@ -137,10 +139,83 @@ export class VariableService {
                 const options = fullArgs.match(/"(.+?)"/g)?.map((o: string) => o.replace(/"/g, '')) ||
                     fullArgs.split(',').map(s => s.trim()).filter(s => s);
                 return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : 'No options';
-            case 'random':
+            case 'uptime':
+            case 'uptimelength':
+            case 'game':
+            case 'title': {
+                // Support target user argument: $(game @user)
+                if (args.length > 0 && args[0].startsWith('@')) {
+                    const targetUser = args[0].replace('@', '');
+                    const info = await this.twitchApi.getUserInfo(targetUser);
+                    if (info?.id) {
+                        const channelInfo = await this.twitchApi.getChannelInfo(info.id);
+                        if (cmdLower === 'game') return channelInfo?.game_name || 'Unknown';
+                        return channelInfo?.title || 'Unknown';
+                    }
+                }
+
+                // Default GET for current channel
+                const info = await this.twitchApi.getChannelInfo(context.broadcasterId);
+                return (cmdLower === 'game' ? info?.game_name : info?.title) || 'Unknown';
+            }
+            case 'followage':
+                const followTarget = args.length > 0 ? args[0].replace('@', '') : context.user;
+                // Need ID for follow target
+                let followTargetId = context.userId;
+                if (followTarget !== context.user) {
+                    const u = await this.twitchApi.getUserInfo(followTarget);
+                    if (u) followTargetId = u.id;
+                    else return 'unknown user';
+                }
+                const follow = await this.twitchApi.getUserFollow(context.broadcasterId, followTargetId);
+                if (!follow) return 'not following';
+                const fDays = Math.floor((Date.now() - new Date(follow.followed_at).getTime()) / 86400000);
+                return `${fDays} days`;
+            case 'watchtime':
+            case 'user.time_online': {
+                const targetU = args.length > 0 ? args[0].replace('@', '') : context.user;
+                const tenantId = await this.getTenantId(context.broadcasterId);
+                // We need to resolve ID from username if target is specified
+                // For now, assuming we can find profile by username or via Twitch API lookup?
+                // ViewerProfile has twitchUserId.
+                let tUserId = context.userId;
+                if (targetU !== context.user) {
+                    const u = await this.twitchApi.getUserInfo(targetU);
+                    if (u) tUserId = u.id;
+                    else return '0m';
+                }
+                const profile = await this.prisma.viewerProfile.findFirst({ where: { tenantId, twitchUserId: tUserId } });
+                const mins = (profile as any)?.watchTime || 0;
+                const h = Math.floor(mins / 60);
+                const m = mins % 60;
+                return `${h}h ${m}m`;
+            }
+            case 'getcount':
+                if (args.length === 0) return '0';
+                const trigger = args[0].replace('!', '');
+                const tId = await this.getTenantId(context.broadcasterId);
+                const cmdData = await this.prisma.command.findFirst({ where: { tenantId: tId, trigger } });
+                return (cmdData?.usages || 0).toString();
+            case 'weather':
+                if (!fullArgs) return '[Location Missing]';
+                try {
+                    const res = await fetch(`https://wttr.in/${encodeURIComponent(fullArgs)}?format=3`);
+                    if (!res.ok) return '[Weather Error]';
+                    return (await res.text()).trim();
+                } catch { return '[Weather Service Unavailable]'; }
+            case 'random.range':
             case 'random.number':
+            case 'random':
                 const numRange = fullArgs.includes('-') ? fullArgs.split('-') : fullArgs.split(' ');
-                const [min, max] = numRange.map(n => parseInt(n.trim()));
+                // If args are provided separate by space or dash
+                let min = 0, max = 100;
+                if (numRange.length >= 2) {
+                    min = parseInt(numRange[0]);
+                    max = parseInt(numRange[1]);
+                } else if (numRange.length === 1 && numRange[0]) {
+                    max = parseInt(numRange[0]);
+                }
+
                 if (!isNaN(min) && !isNaN(max)) {
                     return Math.floor(Math.random() * (max - min + 1) + min).toString();
                 }
@@ -154,8 +229,6 @@ export class VariableService {
                     if (fullArgs) options.timeZone = fullArgs.trim();
                     return new Intl.DateTimeFormat('en-US', options).format(new Date());
                 } catch { return new Date().toLocaleTimeString(); }
-            case 'weather':
-                return `Weather in ${fullArgs}: Sunny, 22°C.`;
             case 'accountage':
                 const uInfo = await this.twitchApi.getUserInfoById(context.userId);
                 if (uInfo?.created_at) {
@@ -173,31 +246,6 @@ export class VariableService {
                     const res = await fetch(fullArgs);
                     return (await res.text()).substring(0, 400);
                 } catch { return '[Fetch Error]'; }
-            case 'uptime':
-            case 'uptimelength':
-            case 'game':
-            case 'title':
-                const stream = await this.twitchApi.getStreamInfo(context.channel);
-                if (!stream) {
-                    // Fallback to channel info for title/game if offline
-                    if (cmdLower === 'game' || cmdLower === 'title') {
-                        const channelInfo = await this.twitchApi.getChannelInfo(context.broadcasterId);
-                        return cmdLower === 'game' ? channelInfo?.game_name : channelInfo?.title;
-                    }
-                    return 'Offline';
-                }
-                if (cmdLower === 'uptime' || cmdLower === 'uptimelength') {
-                    const diff = Date.now() - new Date(stream.started_at).getTime();
-                    const h = Math.floor(diff / 3600000);
-                    const m = Math.floor((diff % 3600000) / 60000);
-                    return `${h}h ${m}m`;
-                }
-                return cmdLower === 'game' ? stream.game_name : stream.title;
-            case 'followage':
-                const follow = await this.twitchApi.getUserFollow(context.broadcasterId, context.userId);
-                if (!follow) return 'not following';
-                const fDays = Math.floor((Date.now() - new Date(follow.followed_at).getTime()) / 86400000);
-                return `${fDays} days`;
             case 'if':
                 // SE standard uses ; while we use , - handle both recursively
                 const delimiter = fullArgs.includes(';') ? ';' : ',';
@@ -230,8 +278,12 @@ export class VariableService {
                 return followers.toLocaleString();
             case 'channel.subs':
             case 'subcount':
-                const subs = await this.twitchApi.getSubscriberCount(context.broadcasterId);
-                return subs.toLocaleString();
+            case 'subscriber_count':
+                const count = await this.executeWithUserTokenRefresh(
+                    context.broadcasterId,
+                    async (token) => await this.twitchApi.getSubscriberCount(context.broadcasterId, token)
+                );
+                return count === -1 ? '0' : count?.toString() || '0';
             case 'shoutout':
                 const target = args[0]?.replace('@', '');
                 return target ? `📢 Go check out ${target} at twitch.tv/${target}! They are doing amazing things. 💜` : '[Target Missing]';
@@ -241,8 +293,28 @@ export class VariableService {
             case 'ffzemotes':
             case '7tvemotes':
                 return 'PogChamp'; // Mock for now
-            case 'random.chatter':
-                return context.user; // Fallback to current user for now
+            case 'channel.id':
+                return context.broadcasterId;
+            case 'channel.slug':
+                return context.channel.replace('#', '');
+            case 'latest.follower':
+                return await this.twitchApi.getLatestFollower(context.broadcasterId) || 'None';
+            case 'random.chatter': {
+                const tId = await this.getTenantId(context.broadcasterId);
+                const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                // Find active profiles in last 5 mins
+                const activeViewers = await this.prisma.viewerProfile.findMany({
+                    where: {
+                        tenantId: tId,
+                        lastActiveAt: { gt: fiveMinutesAgo }
+                    },
+                    select: { username: true }
+                });
+
+                if (activeViewers.length === 0) return context.user;
+                const randomViewer = activeViewers[Math.floor(Math.random() * activeViewers.length)];
+                return randomViewer.username;
+            }
             case 'repeat':
                 const repeatCount = parseInt(args[0]);
                 const repeatText = args.slice(1).join(' ');
@@ -326,5 +398,76 @@ export class VariableService {
     private async getTenantId(twitchId: string): Promise<string> {
         const tenant = await this.prisma.tenant.findUnique({ where: { twitchId } });
         return tenant?.id || 'default';
+    }
+
+    private async getOwnerToken(broadcasterId: string): Promise<string | null> {
+        const tenant = await this.prisma.tenant.findUnique({
+            where: { twitchId: broadcasterId },
+            include: { owner: true }
+        });
+
+        if (!tenant?.owner?.encryptedAccessToken) return null;
+
+        try {
+            return this.security.decrypt(tenant.owner.encryptedAccessToken);
+        } catch (err) {
+            this.logger.error(`Failed to decrypt owner token for broadcaster ${broadcasterId}`, err);
+            return null;
+        }
+    }
+
+    private async executeWithUserTokenRefresh<T>(
+        broadcasterId: string,
+        action: (token: string) => Promise<T>
+    ): Promise<T | null> {
+        const tenant = await this.prisma.tenant.findUnique({
+            where: { twitchId: broadcasterId },
+            include: { owner: true }
+        });
+
+        if (!tenant?.owner?.encryptedAccessToken) return null;
+
+        let token: string;
+        try {
+            token = this.security.decrypt(tenant.owner.encryptedAccessToken);
+        } catch { return null; }
+
+        const result = await action(token);
+
+        // Check if result indicates 401 (Action must return specific error or -1 or similar for us to know)
+        // For sendChatMessage (not used here) it was explicit.
+        // For updateChannelInfo, it returns { success: false, error: '...' }
+        // For getSubscriberCount, it returns -1.
+
+        // Helper to detect 401 based on result shape
+        const isUnauthorized = (res: any) => {
+            if (res === -1) return true;
+            if (res && typeof res === 'object' && res.success === false && (res.error?.includes?.('401') || res.error?.includes?.('Unauthorized'))) return true;
+            return false;
+        };
+
+        if (isUnauthorized(result) && tenant.owner.encryptedRefreshToken) {
+            this.logger.warn(`Helix 401. Refreshing Owner Token for ${broadcasterId}...`);
+            try {
+                const refreshToken = this.security.decrypt(tenant.owner.encryptedRefreshToken);
+                const refreshRes = await this.twitchApi.refreshUserToken(refreshToken);
+
+                if (refreshRes) {
+                    await this.prisma.user.update({
+                        where: { id: tenant.owner.id },
+                        data: {
+                            encryptedAccessToken: this.security.encrypt(refreshRes.accessToken),
+                            encryptedRefreshToken: this.security.encrypt(refreshRes.refreshToken),
+                            tokenExpiresAt: new Date(Date.now() + refreshRes.expiresIn * 1000)
+                        }
+                    });
+                    this.logger.log(`Owner token refreshed. Retrying action...`);
+                    return await action(refreshRes.accessToken);
+                }
+            } catch (e) {
+                this.logger.error('Token refresh failed', e);
+            }
+        }
+        return result;
     }
 }

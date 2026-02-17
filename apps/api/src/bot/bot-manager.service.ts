@@ -3,6 +3,10 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { ChatHandlerService } from './chat-handler.service';
 import { SecurityService } from '../common/security/security.service';
 import * as tmi from 'tmi.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 @Injectable()
 export class BotManagerService implements OnModuleInit {
@@ -124,14 +128,33 @@ export class BotManagerService implements OnModuleInit {
 
                 try {
                     this.logger.log(`Bot [${botKey}] attempting to connect...`);
-                    client.on('connected', () => {
+                    client.on('connected', (addr, port) => {
+                        this.logger.log(`Bot [${botKey}] connected to ${addr}:${port}`);
                         (client as any).raw('CAP REQ :twitch.tv/membership twitch.tv/tags twitch.tv/commands');
                     });
+
+                    if (!group.identity?.password) {
+                        this.logger.warn(`Bot [${botKey}] has no password/token. Skipping connection.`);
+                        continue;
+                    }
+
                     await client.connect();
                     this.clients.set(botKey, client);
                     this.logger.log(`Bot [${botKey}] connected successfully!`);
                 } catch (err) {
-                    this.logger.error(`Failed to connect Bot [${botKey}]: ${err.message}`, err);
+                    const errorDetail = typeof err === 'string' ? err : (err?.message || JSON.stringify(err));
+                    this.logger.error(`Failed to connect Bot [${botKey}]: ${errorDetail}`);
+
+                    // If this is the global bot and auth failed, try refreshing the token
+                    if (botKey === 'global' && errorDetail.includes('Login authentication failed')) {
+                        this.logger.warn('Global bot authentication failed. Attempting token refresh...');
+                        try {
+                            await this.refreshGlobalBotToken();
+                            this.logger.log('✅ Token refreshed successfully. Restart the server to reconnect.');
+                        } catch (refreshErr) {
+                            this.logger.error('❌ Token refresh failed:', refreshErr);
+                        }
+                    }
                 }
             } else {
                 for (const ch of group.channels) {
@@ -156,6 +179,36 @@ export class BotManagerService implements OnModuleInit {
             } catch (err) {
                 this.logger.error(`Failed to join ${channelName}`, err);
             }
+        }
+    }
+
+    async leaveChannel(channelName: string) {
+        this.logger.log(`Attempting to leave channel: ${channelName}`);
+        const client = this.clients.get('global') || Array.from(this.clients.values())[0];
+        if (client) {
+            try {
+                const formattedChannel = channelName.startsWith('#') ? channelName : `#${channelName}`;
+                if (client.getChannels().includes(formattedChannel)) {
+                    await client.part(channelName);
+                    this.logger.log(`Successfully left ${formattedChannel}`);
+                }
+            } catch (err) {
+                this.logger.error(`Failed to leave ${channelName}`, err);
+            }
+        }
+    }
+
+    private async refreshGlobalBotToken(): Promise<void> {
+        this.logger.log('Executing token refresh script...');
+        try {
+            const { stdout, stderr } = await execAsync('node refresh-bot-token.js', {
+                cwd: process.cwd().replace(/apps[\\/]api$/, '')
+            });
+            if (stdout) this.logger.log(stdout);
+            if (stderr) this.logger.error(stderr);
+        } catch (err) {
+            this.logger.error('Failed to execute refresh script:', err);
+            throw err;
         }
     }
 }

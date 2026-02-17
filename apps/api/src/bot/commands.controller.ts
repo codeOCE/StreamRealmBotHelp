@@ -38,6 +38,16 @@ export class CommandsController {
         return this.commandsService.update(id, data);
     }
 
+    @Delete('bulk')
+    async deleteBulk(@Query('tenantId') tenantId: string) {
+        let finalTenantId = tenantId;
+        if (!finalTenantId) {
+            const tenant = await this.prisma.tenant.findFirst();
+            finalTenantId = tenant?.id || 'default';
+        }
+        return this.commandsService.deleteAll(finalTenantId);
+    }
+
     @Delete(':id')
     async deleteCommand(@Param('id') id: string) {
         return this.commandsService.delete(id);

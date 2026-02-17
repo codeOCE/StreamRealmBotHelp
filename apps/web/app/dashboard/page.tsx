@@ -1,4 +1,5 @@
 import React from 'react';
+import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
 
 export default function DashboardPage() {
     return (
@@ -7,6 +8,8 @@ export default function DashboardPage() {
                 <h1 className="text-3xl font-black tracking-tight text-white uppercase">Control Center</h1>
                 <p className="text-zinc-500 text-sm font-bold tracking-wide">Real-time channel metrics and operational status.</p>
             </div>
+
+            <OnboardingChecklist />
 
             {/* Analytics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

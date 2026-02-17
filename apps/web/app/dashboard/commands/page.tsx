@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import CommandModal from '../../../components/dashboard/CommandModal';
 import ImportModal from '../../../components/dashboard/ImportModal';
 import { io } from 'socket.io-client';
+import { toast } from "sonner";
 
 interface Command {
     id: string;
@@ -92,6 +93,23 @@ export default function CommandsPage() {
         }
     };
 
+    const handleDeleteAll = async () => {
+        if (!confirm('Are you sure you want to DELETE ALL custom commands? This cannot be undone.')) return;
+        try {
+            const res = await fetch(`${API_BASE}/bulk`, { method: 'DELETE' });
+            if (res.ok) {
+                const result = await res.json();
+                toast.success(`Deleted ${result.count} commands.`);
+                fetchCommands();
+            } else {
+                toast.error('Failed to delete commands.');
+            }
+        } catch (err) {
+            console.error('Failed to delete all commands', err);
+            toast.error('Failed to delete commands.');
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this command?')) return;
         try {
@@ -123,11 +141,22 @@ export default function CommandsPage() {
                 body: JSON.stringify({ commands: importCommands }),
             });
             const results = await res.json();
-            alert(`Import complete! Imported: ${results.imported}, Skipped: ${results.skipped}, Errors: ${results.errors}`);
+
+            if (results.error) {
+                toast.error(results.error);
+                return;
+            }
+
+            toast.success(`Import complete! Imported: ${results.imported}, Skipped: ${results.skipped}`);
+            if (results.errors > 0) {
+                toast.warning(`${results.errors} errors occurred during import`);
+            }
+
+            // Refresh commands list
             fetchCommands();
         } catch (err) {
             console.error('Failed to import commands', err);
-            alert('Import failed. Check console for details.');
+            toast.error('Import failed. Check console for details.');
         }
     };
 
@@ -150,6 +179,30 @@ export default function CommandsPage() {
                     >
                         Import Commands
                     </button>
+                    {activeCategory === 'custom' && filteredCommands.length > 0 && (
+                        <button
+                            onClick={handleDeleteAll}
+                            className="bg-rose-500/10 border border-rose-500/20 text-rose-500 font-black text-[10px] px-6 py-3 rounded-lg hover:bg-rose-500 hover:text-white transition-all uppercase tracking-widest"
+                        >
+                            Delete All
+                        </button>
+                    )}
+                    {activeCategory === 'custom' && filteredCommands.length > 0 && (
+                        <button
+                            onClick={handleDeleteAll}
+                            className="bg-rose-500/10 border border-rose-500/20 text-rose-500 font-black text-[10px] px-6 py-3 rounded-lg hover:bg-rose-500 hover:text-white transition-all uppercase tracking-widest"
+                        >
+                            Delete All
+                        </button>
+                    )}
+                    {activeCategory === 'custom' && filteredCommands.length > 0 && (
+                        <button
+                            onClick={handleDeleteAll}
+                            className="bg-rose-500/10 border border-rose-500/20 text-rose-500 font-black text-[10px] px-6 py-3 rounded-lg hover:bg-rose-500 hover:text-white transition-all uppercase tracking-widest"
+                        >
+                            Delete All
+                        </button>
+                    )}
                     <button
                         onClick={() => {
                             setEditingCommand(undefined);

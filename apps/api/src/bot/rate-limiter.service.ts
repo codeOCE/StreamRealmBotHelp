@@ -80,9 +80,55 @@ export class MessageProcessor extends WorkerHost {
                 // 2. Fallback to global bot token if it matches the effectiveBotUsername
                 if (!botToken && effectiveBotUsername === process.env.GLOBAL_BOT_USERNAME) {
                     botToken = process.env.GLOBAL_BOT_TOKEN?.replace('oauth:', '');
+                    this.logger.debug(`✅ Using GLOBAL_BOT_TOKEN for Helix: ${botToken ? `${botToken.substring(0, 10)}... (${botToken.length} chars)` : 'MISSING!'}`);
+                } else if (!botToken) {
+                    this.logger.error(`❌ No bot token found! effectiveBotUsername: ${effectiveBotUsername}, GLOBAL_BOT_USERNAME: ${process.env.GLOBAL_BOT_USERNAME}`);
                 }
 
+                this.logger.debug(`📤 Calling Helix sendChatMessage:`);
+                this.logger.debug(`   broadcaster_id: ${broadcasterId}`);
+                this.logger.debug(`   sender_id: ${botInfo.id}`);
+                this.logger.debug(`   token: ${botToken ? 'PRESENT ✅' : 'MISSING ❌'}`);
+
                 const res = await this.twitchApi.sendChatMessage(broadcasterId, botInfo.id, message, replyTo, botToken);
+
+                // Auto-refresh token on 401
+                if (!res.success && (res.error?.includes('401') || res.error?.includes('Unauthorized')) && tenant?.botRefreshToken) {
+                    this.logger.warn(`Helix 401 Unauthorized. Attempting to refresh bot token for tenant ${tenant.id}...`);
+                    try {
+                        const refreshToken = this.security.decrypt(tenant.botRefreshToken);
+                        const refreshResult = await this.twitchApi.refreshUserToken(refreshToken);
+
+                        if (refreshResult) {
+                            // Update DB with new tokens
+                            const newEncryptedAccess = this.security.encrypt(refreshResult.accessToken);
+                            const newEncryptedRefresh = this.security.encrypt(refreshResult.refreshToken);
+
+                            await this.prisma.tenant.update({
+                                where: { id: tenant.id },
+                                data: {
+                                    botAccessToken: newEncryptedAccess,
+                                    botRefreshToken: newEncryptedRefresh
+                                }
+                            });
+
+                            this.logger.log(`Bot token refreshed successfully. Retrying message...`);
+                            // Retry with new token
+                            const retryRes = await this.twitchApi.sendChatMessage(broadcasterId, botInfo.id, message, replyTo, refreshResult.accessToken);
+                            if (retryRes.success) {
+                                this.logger.log(`Helix message sent successfully (after refresh) to ${channel}`);
+                                return { success: true, method: 'helix', refreshed: true };
+                            } else {
+                                this.logger.warn(`Retry failed: ${retryRes.error}`);
+                            }
+                        } else {
+                            this.logger.error('Token refresh failed (invalid refresh token?)');
+                        }
+                    } catch (err) {
+                        this.logger.error(`Failed to refresh token during retry logic`, err);
+                    }
+                }
+
                 if (res.success) {
                     this.logger.log(`Helix message sent successfully to ${channel} from ${effectiveBotUsername}`);
                     return { success: true, method: 'helix' };
