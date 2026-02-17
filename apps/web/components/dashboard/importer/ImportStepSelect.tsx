@@ -10,6 +10,13 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
+/**
+ * Renders the import-selection UI used to review, filter, select, and migrate commands from an external provider.
+ *
+ * Displays a searchable, scrollable list of importable commands (normalizing varying backend shapes), supports selecting individual or all filtered commands, and initiates the migration process which posts selected commands to the import API, advances the import step, and logs and notifies the user about progress and results.
+ *
+ * @returns The component tree for the import selection step (JSX element).
+ */
 export function ImportStepSelect() {
     const { state, setStep, toggleItem, setSelectedItems, addLog } = useImport();
     const [isMigrating, setIsMigrating] = useState(false);

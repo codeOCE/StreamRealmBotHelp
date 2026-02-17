@@ -8,6 +8,15 @@ import { cn } from '@/lib/utils';
 
 const API_BASE = 'http://localhost:3001/integrations';
 
+/**
+ * Render the Sentinel Presence UI for viewing and managing a tenant's bot integrations across platforms.
+ *
+ * Fetches tenant and onboarding status on mount, displays platform cards with current connection status, and
+ * exposes actions to initialize, deactivate, or relink the protocol which invoke backend bot endpoints and surface
+ * success/error feedback via toasts. Shows per-action loading states and refreshes status after actions complete.
+ *
+ * @returns A JSX element containing the integrations management interface
+ */
 export default function IntegrationsPage() {
     const searchParams = useSearchParams();
     const [tenant, setTenant] = useState<any>(null);
@@ -223,4 +232,3 @@ export default function IntegrationsPage() {
         </div>
     );
 }
-

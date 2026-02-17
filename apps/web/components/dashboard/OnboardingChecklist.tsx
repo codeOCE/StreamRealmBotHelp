@@ -20,6 +20,15 @@ interface OnboardingStatus {
     completed: boolean;
 }
 
+/**
+ * Renders a dismissible onboarding checklist that displays integration progress and per-step navigation.
+ *
+ * On mount, the component fetches onboarding status and shows a progress bar and a grid of steps with visual
+ * indicators and links to relevant dashboard sections. The checklist hides itself when dismissed, while loading,
+ * or if the onboarding status indicates completion.
+ *
+ * @returns The onboarding checklist React element, or `null` when hidden, loading, or completed.
+ */
 export function OnboardingChecklist() {
     const [status, setStatus] = useState<OnboardingStatus | null>(null);
     const [isVisible, setIsVisible] = useState(true);
@@ -150,6 +159,12 @@ export function OnboardingChecklist() {
     );
 }
 
+/**
+ * Map an onboarding step key to the corresponding dashboard route.
+ *
+ * @param key - The onboarding step identifier (e.g., `linked_bot`, `created_command`, `enabled_moderation`, `imported_commands`)
+ * @returns The route path to navigate for the given step (defaults to `/dashboard`)
+ */
 function getLinkForStep(key: string): string {
     switch (key) {
         case 'linked_bot': return '/dashboard/integrations';

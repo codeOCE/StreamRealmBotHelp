@@ -21,6 +21,11 @@ interface Command {
     aliases?: string[];
 }
 
+/**
+ * Render and manage the Command Registry UI, including create, edit, delete, import, enable/disable, and real-time synchronization with the server.
+ *
+ * @returns The React element tree for the Commands page.
+ */
 export default function CommandsPage() {
     const [commands, setCommands] = useState<Command[]>([]);
     const [isLoading, setIsLoading] = useState(true);

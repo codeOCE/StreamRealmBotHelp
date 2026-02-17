@@ -5,6 +5,16 @@ import { ImportStepConnect } from "./ImportStepConnect";
 import { ImportStepSelect } from "./ImportStepSelect";
 import { ImportStepMigrating } from "./ImportStepMigrating";
 
+/**
+ * Renders the import wizard UI wrapped with ImportProvider.
+ *
+ * The provider receives the optional `onComplete` callback, and the content component
+ * receives the optional `onClose` callback to signal the wizard being closed or finished.
+ *
+ * @param onComplete - Optional callback invoked with the array of imported items when the import completes
+ * @param onClose - Optional callback invoked when the wizard is closed or the finish action is triggered
+ * @returns The Import Wizard React element
+ */
 export function ImportWizard({ onComplete, onClose }: { onComplete?: (items: any[]) => void, onClose?: () => void }) {
     return (
         <ImportProvider onComplete={onComplete}>
@@ -13,6 +23,12 @@ export function ImportWizard({ onComplete, onClose }: { onComplete?: (items: any
     );
 }
 
+/**
+ * Renders the content of the Import Wizard and displays the current step UI based on import state.
+ *
+ * @param onClose - Optional callback invoked when the user finishes the wizard (clicks "Finish & View Commands").
+ * @returns The rendered import wizard content element.
+ */
 function ImportWizardContent({ onClose }: { onClose?: () => void }) {
     const { state } = useImport();
 

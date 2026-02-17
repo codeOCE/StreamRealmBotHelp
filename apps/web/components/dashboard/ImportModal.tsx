@@ -9,6 +9,14 @@ interface ImportModalProps {
     onImport: (commands: any[]) => void;
 }
 
+/**
+ * Render a centered import modal that delegates the import flow to ImportWizard.
+ *
+ * @param isOpen - Whether the modal is visible
+ * @param onClose - Callback invoked when the modal is closed (e.g., close button or wizard cancellation)
+ * @param onImport - Callback invoked when the wizard completes; receives an array of imported commands
+ * @returns The modal element when `isOpen` is true, `null` otherwise
+ */
 export default function ImportModal({ isOpen, onClose, onImport }: ImportModalProps) {
     if (!isOpen) return null;
 

@@ -1,6 +1,11 @@
 const { PrismaClient } = require('@stream-realm/database');
 const prisma = new PrismaClient();
 
+/**
+ * Update tenant with twitchId '96085876' to set its botUsername to 'streamrealmbot'.
+ *
+ * Ensures the Prisma client is disconnected when finished and logs success or error information to the console.
+ */
 async function updateTenant() {
     console.log('>> Updating Tenant 96085876...');
 

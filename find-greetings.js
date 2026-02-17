@@ -1,6 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+/**
+ * Searches the first tenant's commands for a '!greetings' command and logs its details if found; if not found, logs all tenant commands that have aliases, and ensures the Prisma client is disconnected.
+ *
+ * Logs any errors encountered to the console.
+ */
 async function findGreetings() {
     try {
         const tenant = await prisma.tenant.findFirst();

@@ -1,6 +1,15 @@
 import React from 'react';
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
 
+/**
+ * Renders the main dashboard UI for the Control Center.
+ *
+ * The layout includes a header with title and subtitle, the onboarding checklist,
+ * an analytics grid of StatCard components, a Live Service Status area with
+ * OperationCard components, and an Activity Feed with ActivityItem entries.
+ *
+ * @returns The Dashboard page React element containing the header, onboarding checklist, analytics stat cards, live service status cards, and activity feed.
+ */
 export default function DashboardPage() {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">

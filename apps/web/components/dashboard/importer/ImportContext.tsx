@@ -24,6 +24,13 @@ interface ImportContextType {
 
 const ImportContext = createContext<ImportContextType | undefined>(undefined);
 
+/**
+ * Provides a context for the import flow and supplies state plus updater helpers to descendant components.
+ *
+ * @param children - React nodes to render within the provider
+ * @param onComplete - Optional callback that will be invoked with the imported items when the import completes
+ * @returns A JSX element that wraps children with the ImportContext provider containing state and mutation functions
+ */
 export function ImportProvider({ children, onComplete }: { children: ReactNode, onComplete?: (items: any[]) => void }) {
     const [state, setState] = useState<ImportState>({
         step: 'connect',

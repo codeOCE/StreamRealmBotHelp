@@ -2,8 +2,12 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Refreshes the global bot token using the refresh token from .env
- * This is called automatically by BotManagerService when authentication fails
+ * Refreshes the application's global Twitch bot access token and writes the new tokens to apps/api/.env.
+ *
+ * Loads CLIENT_ID, CLIENT_SECRET, and GLOBAL_BOT_REFRESH_TOKEN from apps/api/.env, requests a new access and refresh token from Twitch, updates the .env entries GLOBAL_BOT_TOKEN and GLOBAL_BOT_REFRESH_TOKEN, and returns the new tokens.
+ *
+ * @returns {{ access_token: string, refresh_token: string }} The refreshed access and refresh tokens returned by Twitch.
+ * @throws {Error} If required environment variables are missing or if the token refresh request fails.
  */
 async function refreshGlobalBotToken() {
     require('dotenv').config({ path: path.join(__dirname, 'apps', 'api', '.env') });
