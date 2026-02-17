@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { TwitchApiService } from './twitch-api.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { SecurityService } from '../common/security/security.service';
+import { evaluate } from 'mathjs';
 
 export interface ParseContext {
     user: string;
@@ -355,16 +356,30 @@ export class VariableService {
                 return encodeURIComponent(fullArgs).replace(/%2F/g, '/');
             case 'math':
                 try {
-                    // Safe basic math eval
+                    // Safe math evaluation using mathjs
                     const cleanMath = fullArgs.replace(/[^0-9+\-*/().\s]/g, '');
-                    const result = eval(cleanMath);
+                    const result = evaluate(cleanMath);
                     return result.toString();
                 } catch { return '[Math Error]'; }
             default:
+                // Handle range arguments $(1:), $(2:) etc
+                if (cmd.endsWith(':')) {
+                    const startNum = parseInt(cmd.slice(0, -1));
+                    if (!isNaN(startNum) && startNum > 0) {
+                        const val = context.args.slice(startNum - 1).join(' ');
+                        // Default to user if checking for first arg range and it's empty
+                        if (!val && startNum === 1) return context.user;
+                        return val;
+                    }
+                }
+
                 // Handle numeric arguments $(1), $(2) etc
                 const argNum = parseInt(cmd);
                 if (!isNaN(argNum)) {
-                    return context.args[argNum - 1] || '';
+                    const val = context.args[argNum - 1];
+                    // Default to user if checking for first arg and it's empty
+                    if (!val && argNum === 1) return context.user;
+                    return val || '';
                 }
                 return `$(unknown:${cmd})`;
         }

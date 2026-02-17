@@ -52,10 +52,10 @@ export class BotManagerService implements OnModuleInit {
             let botKey = 'global';
             let identity: any = undefined;
 
-            if (tenant.botAccessToken && tenant.botUsername) {
+            if (tenant.encryptedBotAccessToken && tenant.botUsername) {
                 botKey = tenant.botUsername;
                 try {
-                    const token = this.security.decrypt(tenant.botAccessToken);
+                    const token = this.security.decrypt(tenant.encryptedBotAccessToken);
                     const password = token.startsWith('oauth:') ? token : `oauth:${token}`;
                     identity = {
                         username: tenant.botUsername,
@@ -66,7 +66,7 @@ export class BotManagerService implements OnModuleInit {
                 }
             } else if (globalBotUsername && globalBotToken) {
                 const password = globalBotToken.startsWith('oauth:') ? globalBotToken : `oauth:${globalBotToken}`;
-                this.logger.warn(`Debug: Global Bot Identity - Username: ${globalBotUsername}, Password Prefix: ${password.substring(0, 15)}...`);
+                this.logger.warn(`Debug: Global Bot Identity - Username: ${globalBotUsername}, Password Provided: [REDACTED]`);
                 identity = {
                     username: globalBotUsername,
                     password,
@@ -99,13 +99,13 @@ export class BotManagerService implements OnModuleInit {
                 });
 
                 client.on('message', (ch, userstate, message, self) => {
-                    this.logger.log(`[EVENT:message] ${userstate.username} in ${ch}: ${message} (self: ${self})`);
+                    this.logger.debug(`[EVENT:message] ${userstate.username} in ${ch} (self: ${self})`);
                     if (self) return;
                     this.chatHandler.handleMessage(ch.replace('#', ''), userstate, message, client!);
                 });
 
                 client.on('chat', (ch, userstate, message, self) => {
-                    this.logger.log(`[EVENT:chat] ${userstate.username} in ${ch}: ${message}`);
+                    this.logger.debug(`[EVENT:chat] ${userstate.username} in ${ch}`);
                 });
 
                 client.on('join', (ch, user, self) => {
@@ -158,7 +158,7 @@ export class BotManagerService implements OnModuleInit {
                 }
             } else {
                 for (const ch of group.channels) {
-                    if (!client.getChannels().includes(`#${ch}`)) {
+                    if (!client.getChannels().includes(ch)) {
                         await client.join(ch);
                     }
                 }

@@ -30,12 +30,15 @@ export class SkillsService {
 
         if (!profile) throw new BadRequestException('Viewer profile not found');
 
-        // 2. Get Skill Node
-        const skill = await this.prisma.skillNode.findUnique({
-            where: { id: skillNodeId }
+        // 2. Get Skill Node (scoped to tenant to prevent cross-tenant access)
+        const skill = await this.prisma.skillNode.findFirst({
+            where: {
+                id: skillNodeId,
+                tenantId: tenantId
+            }
         });
 
-        if (!skill) throw new BadRequestException('Skill node not found');
+        if (!skill) throw new BadRequestException('Skill node not found or does not belong to this tenant');
 
         // 3. Validation: Already unlocked?
         const isUnlocked = profile.unlockedSkills.some(us => us.skillNodeId === skillNodeId);

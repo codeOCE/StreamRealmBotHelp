@@ -61,9 +61,9 @@ export class BattleService {
         const challengerRoll = Math.floor(Math.random() * 100) + 1;
         const opponentRoll = Math.floor(Math.random() * 100) + 1;
 
-        // Determine winner
-        const winnerId = challengerRoll > opponentRoll ? challenger.id : opponent.id;
-        const isChallengerWinner = challengerRoll > opponentRoll;
+        // Determine winner - handle tie case explicitly (challenger wins on tie)
+        const isChallengerWinner = challengerRoll >= opponentRoll;
+        const winnerId = isChallengerWinner ? challenger.id : opponent.id;
 
         // Calculate MMR change
         const mmrDiff = Math.abs(challenger.mmr - opponent.mmr);
@@ -79,43 +79,46 @@ export class BattleService {
 
         mmrChange = Math.max(5, mmrChange); // Minimum 5 MMR change
 
-        // Update MMR
-        if (isChallengerWinner) {
-            await this.prisma.viewerProfile.update({
-                where: { id: challenger.id },
-                data: { mmr: challenger.mmr + mmrChange }
-            });
-            await this.prisma.viewerProfile.update({
-                where: { id: opponent.id },
-                data: { mmr: Math.max(0, opponent.mmr - mmrChange) }
-            });
-        } else {
-            await this.prisma.viewerProfile.update({
-                where: { id: opponent.id },
-                data: { mmr: opponent.mmr + mmrChange }
-            });
-            await this.prisma.viewerProfile.update({
-                where: { id: challenger.id },
-                data: { mmr: Math.max(0, challenger.mmr - mmrChange) }
-            });
-        }
-
-        // Create battle record
-        const battle = await this.prisma.battle.create({
-            data: {
-                tenantId,
-                challengerId: challenger.id,
-                opponentId: opponent.id,
-                challengerRoll,
-                opponentRoll,
-                winnerId,
-                mmrChange
-            },
-            include: {
-                challenger: true,
-                opponent: true,
-                winner: true
+        // Wrap MMR updates and battle creation in a transaction for atomicity
+        const battle = await this.prisma.$transaction(async (tx) => {
+            // Update MMR for both players
+            if (isChallengerWinner) {
+                await tx.viewerProfile.update({
+                    where: { id: challenger.id },
+                    data: { mmr: challenger.mmr + mmrChange }
+                });
+                await tx.viewerProfile.update({
+                    where: { id: opponent.id },
+                    data: { mmr: Math.max(0, opponent.mmr - mmrChange) }
+                });
+            } else {
+                await tx.viewerProfile.update({
+                    where: { id: opponent.id },
+                    data: { mmr: opponent.mmr + mmrChange }
+                });
+                await tx.viewerProfile.update({
+                    where: { id: challenger.id },
+                    data: { mmr: Math.max(0, challenger.mmr - mmrChange) }
+                });
             }
+
+            // Create battle record
+            return await tx.battle.create({
+                data: {
+                    tenantId,
+                    challengerId: challenger.id,
+                    opponentId: opponent.id,
+                    challengerRoll,
+                    opponentRoll,
+                    winnerId,
+                    mmrChange
+                },
+                include: {
+                    challenger: true,
+                    opponent: true,
+                    winner: true
+                }
+            });
         });
 
         this.logger.log(`Battle: ${challengerUsername}(${challengerRoll}) vs ${opponentUsername}(${opponentRoll}) - Winner: ${battle.winner.username}`);

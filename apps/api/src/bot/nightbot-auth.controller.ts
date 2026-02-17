@@ -1,16 +1,66 @@
-import { Controller, Get, Query, Req, Res, Logger } from '@nestjs/common';
+import { Controller, Get, Query, Req, Res, Logger, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { SecurityService } from '../common/security/security.service';
 import type { Response } from 'express';
+import * as crypto from 'crypto';
 
 @Controller('auth/nightbot')
 export class NightbotAuthController {
     private readonly logger = new Logger(NightbotAuthController.name);
+    private readonly STATE_SECRET = process.env.STATE_SECRET || 'default-secret-change-in-production';
+    private readonly STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
     constructor(
         private prisma: PrismaService,
         private security: SecurityService,
     ) { }
+
+    /**
+     * Generate HMAC-signed state to prevent forgery
+     */
+    private createSignedState(tenantId: string): string {
+        const timestamp = Date.now();
+        const payload = JSON.stringify({ tenantId, ts: timestamp });
+        const hmac = crypto.createHmac('sha256', this.STATE_SECRET);
+        hmac.update(payload);
+        const signature = hmac.digest('hex');
+
+        // Return base64(payload + signature)
+        const signedState = Buffer.from(JSON.stringify({ payload, signature })).toString('base64');
+        return signedState;
+    }
+
+    /**
+     * Verify HMAC-signed state and extract tenantId
+     */
+    private verifySignedState(state: string): { tenantId: string } {
+        try {
+            const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+            const { payload, signature } = decoded;
+
+            // Verify HMAC signature
+            const hmac = crypto.createHmac('sha256', this.STATE_SECRET);
+            hmac.update(payload);
+            const expectedSignature = hmac.digest('hex');
+
+            if (signature !== expectedSignature) {
+                throw new UnauthorizedException('Invalid state signature');
+            }
+
+            // Parse payload and check expiry
+            const { tenantId, ts } = JSON.parse(payload);
+            const age = Date.now() - ts;
+
+            if (age > this.STATE_EXPIRY_MS) {
+                throw new UnauthorizedException('State expired');
+            }
+
+            return { tenantId };
+        } catch (error) {
+            this.logger.error('State verification failed:', error);
+            throw new UnauthorizedException('Invalid or expired state');
+        }
+    }
 
     @Get()
     async initiateOAuth(@Req() req: any, @Res() res: Response) {
@@ -25,8 +75,8 @@ export class NightbotAuthController {
         const redirectUri = `${process.env.API_URL || 'http://localhost:3001'}/auth/nightbot/callback`;
         const scope = 'commands';
 
-        // Store tenant ID in state for callback
-        const state = Buffer.from(JSON.stringify({ tenantId })).toString('base64');
+        // Create HMAC-signed state to prevent forgery
+        const state = this.createSignedState(tenantId);
 
         const authUrl = `https://api.nightbot.tv/oauth2/authorize?` +
             `response_type=code&` +
@@ -46,8 +96,12 @@ export class NightbotAuthController {
                 return res.status(400).send('Missing authorization code');
             }
 
-            // Decode state to get tenant ID
-            const { tenantId } = JSON.parse(Buffer.from(state, 'base64').toString());
+            if (!state) {
+                return res.status(400).send('Missing state parameter');
+            }
+
+            // Verify HMAC signature and extract tenant ID
+            const { tenantId } = this.verifySignedState(state);
 
             // Exchange code for access token
             const clientId = process.env.NIGHTBOT_CLIENT_ID;
@@ -104,6 +158,11 @@ export class NightbotAuthController {
             res.redirect('http://localhost:3000/dashboard/commands?nightbot=connected');
         } catch (error) {
             this.logger.error('Nightbot OAuth callback error:', error);
+
+            if (error instanceof UnauthorizedException) {
+                return res.status(401).send('Invalid or expired OAuth state');
+            }
+
             res.status(500).send('OAuth callback failed');
         }
     }

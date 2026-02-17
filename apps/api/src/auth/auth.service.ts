@@ -3,6 +3,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { SecurityService } from '../common/security/security.service';
 import { BotManagerService } from '../bot/bot-manager.service';
 
+
 @Injectable()
 export class AuthService {
     constructor(
@@ -113,6 +114,7 @@ export class AuthService {
                             isBuiltIn: cmd.isBuiltIn,
                             enabled: true,
                             description: cmd.description,
+                            responseType: (cmd.responseType as any),
                         }
                     });
                 }

@@ -49,36 +49,44 @@ export class VariableParserService {
 
         let result = text;
 
+        // Complex structures - must come FIRST
+        result = result.replace(/\$\{if\s+/gi, '$(if ');
+        result = result.replace(/\$\{urlfetch\s+/gi, '$(urlfetch ');
+
         // User variables
-        result = result.replace(/\$\{user\}/gi, '@{user}');
-        result = result.replace(/\$\{user\.name\}/gi, '@{user}');
-        result = result.replace(/\$\{sender\}/gi, '@{user}');
+        result = result.replace(/\$\{user\}/gi, '$(user)');
+        result = result.replace(/\$\{user\.name\}/gi, '$(user)');
+        result = result.replace(/\$\{sender\}/gi, '$(user)');
 
         // Positional arguments
-        result = result.replace(/\$\{1\}/g, '{args[0]}');
-        result = result.replace(/\$\{2\}/g, '{args[1]}');
-        result = result.replace(/\$\{3\}/g, '{args[2]}');
-        result = result.replace(/\$\{4\}/g, '{args[3]}');
-        result = result.replace(/\$\{5\}/g, '{args[4]}');
+        result = result.replace(/\$\{1\}/g, '$(1)');
+        result = result.replace(/\$\{2\}/g, '$(2)');
+        result = result.replace(/\$\{3\}/g, '$(3)');
+        result = result.replace(/\$\{4\}/g, '$(4)');
+        result = result.replace(/\$\{5\}/g, '$(5)');
 
         // Query string
-        result = result.replace(/\$\{querystring\}/gi, '{args}');
-        result = result.replace(/\$\{query\}/gi, '{args}');
+        result = result.replace(/\$\{querystring\}/gi, '$(query)');
+        result = result.replace(/\$\{query\}/gi, '$(query)');
 
         // Count
-        result = result.replace(/\$\{count\}/gi, '{count}');
-        result = result.replace(/\$\{counter\}/gi, '{count}');
+        result = result.replace(/\$\{count\}/gi, '$(count)');
+        result = result.replace(/\$\{counter\}/gi, '$(count)');
 
         // Channel
-        result = result.replace(/\$\{channel\}/gi, '{channel}');
-        result = result.replace(/\$\{channel\.name\}/gi, '{channel}');
+        result = result.replace(/\$\{channel\}/gi, '$(channel)');
+        result = result.replace(/\$\{channel\.name\}/gi, '$(channel)');
 
-        // API calls
-        result = result.replace(/\$\{customapi\.([^}]+)\}/gi, '{api:$1}');
-        result = result.replace(/\$\{urlfetch\s+([^}]+)\}/gi, '{api:$1}');
+        // API calls - convert to modern $(urlfetch) format
+        result = result.replace(/\$\{customapi\.([^}]+)\}/gi, '$(urlfetch $1)');
+        result = result.replace(/\$\{urlfetch\s+([^}]+)\}/gi, '$(urlfetch $1)');
 
         // Target user
-        result = result.replace(/\$\{touser\}/gi, '@{args[0]}');
+        result = result.replace(/\$\{touser\}/gi, '$(touser)');
+
+        // Final cleanup: convert any remaining ${...} to $(...)
+        result = result.replace(/\$\{/g, '$(');
+        result = result.replace(/\}/g, ')');
 
         return result;
     }

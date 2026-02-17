@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function DashboardLayout({
     children,
@@ -10,7 +11,7 @@ export default function DashboardLayout({
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        fetch('http://localhost:3001/user/me')
+        fetch('/api/user/me')
             .then(res => res.json())
             .then(data => setUser(data))
             .catch(err => console.error('Failed to fetch user:', err));
@@ -39,6 +40,7 @@ export default function DashboardLayout({
                     <SidebarItem href="/dashboard/timers" icon="⏱️" label="Timers" />
                     <SidebarItem href="/dashboard/loyalty" icon="🏆" label="Loyalty" />
                     <SidebarItem href="/dashboard/interactions" icon="⚔️" label="Interactions" />
+                    <SidebarItem href="/dashboard/overlays" icon="🎨" label="Overlays" />
                     <SidebarItem href="/dashboard/tools" icon="🛠️" label="Tools & Utilities" />
                 </nav>
 
@@ -102,18 +104,19 @@ export default function DashboardLayout({
 
 function SidebarItem({ href, icon, label, active = false }: { href: string, icon: string, label: string, active?: boolean }) {
     return (
-        <a
+        <Link
             href={href}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-xs font-bold ${active
                 ? 'bg-brand-primary/10 text-brand-primary'
                 : 'text-zinc-400 hover:text-white hover:bg-white/[0.03]'
                 }`}
+            aria-current={active ? 'page' : undefined}
         >
             <span className={`text-base ${active ? '' : 'opacity-60 grayscale'}`}>{icon}</span>
             <span>{label}</span>
             {active && (
                 <div className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-primary shadow-[0_0_8px_rgba(0,163,255,0.6)]" />
             )}
-        </a>
+        </Link>
     );
 }

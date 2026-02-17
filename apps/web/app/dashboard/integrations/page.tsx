@@ -1,15 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { Bot, Link2, Unlink, RefreshCw, CheckCircle2, AlertCircle, ChevronRight, Power, PowerOff, ShieldCheck, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-const API_BASE = 'http://localhost:3001/integrations';
+const API_BASE = '/api/integrations';
 
 export default function IntegrationsPage() {
-    const searchParams = useSearchParams();
     const [tenant, setTenant] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
@@ -17,7 +15,7 @@ export default function IntegrationsPage() {
     const fetchTenantStatus = async () => {
         try {
             // First, fetch the current user to get their tenant ID
-            const userRes = await fetch('http://localhost:3001/user/me');
+            const userRes = await fetch('/api/user/me');
             if (!userRes.ok) throw new Error('Failed to fetch user');
             const userData = await userRes.json();
 
@@ -29,7 +27,7 @@ export default function IntegrationsPage() {
             }
 
             // Fetch onboarding status to check initialization progress
-            const statusRes = await fetch(`http://localhost:3001/dashboard/onboarding/${userData.tenantId}`);
+            const statusRes = await fetch(`/api/dashboard/onboarding/${userData.tenantId}`);
             if (!statusRes.ok) throw new Error('Failed to fetch status');
             const statusData = await statusRes.json();
 
@@ -62,7 +60,7 @@ export default function IntegrationsPage() {
             const res = await fetch(`${API_BASE}/bot/${action}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tenantId: tenant.id })
+                body: JSON.stringify({ tenantId: tenant.id }),
             });
             const data = await res.json();
             if (res.ok) {

@@ -7,7 +7,7 @@ interface Timer {
     name: string;
     message: string;
     intervalSeconds: number;
-    minMessages: number;
+    chatLines: number;
     enabled: boolean;
 }
 
@@ -30,7 +30,7 @@ export default function TimerModal({ isOpen, onClose, onSave, initialData }: Tim
             setName(initialData.name);
             setMessage(initialData.message);
             setIntervalMinutes(Math.floor(initialData.intervalSeconds / 60));
-            setMinMessages(initialData.minMessages);
+            setMinMessages(initialData.chatLines);
             setEnabled(initialData.enabled);
         } else {
             setName('');
@@ -50,7 +50,7 @@ export default function TimerModal({ isOpen, onClose, onSave, initialData }: Tim
             name,
             message,
             intervalSeconds: intervalMinutes * 60,
-            minMessages,
+            chatLines: minMessages,
             enabled
         });
         onClose();

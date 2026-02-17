@@ -29,8 +29,8 @@ model Tenant {
   isConnected     Boolean         @default(false)
   name            String
   twitchId        String          @unique
-  botAccessToken  String?
-  botRefreshToken String?
+  encryptedBotAccessToken  String?
+  encryptedBotRefreshToken String?
   botUsername     String?
   targetChannel   String?
   auditLogs       AuditLog[]
@@ -50,6 +50,9 @@ model Tenant {
   
   // Battle System
   battles         Battle[]
+  
+  // Overlay Creator
+  overlays        Overlay[]  @relation("TenantOverlays")
   
   onboarding      Onboarding?
 }
@@ -115,7 +118,7 @@ model Timer {
   name            String
   message         String
   intervalSeconds Int      @default(300)
-  minMessages     Int      @default(1)
+  chatLines       Int      @default(1)
   enabled         Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -289,3 +292,61 @@ enum UserLevel {
   MODERATOR
   BROADCASTER
 }
+
+// Overlay Creator Models
+model Overlay {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation("TenantOverlays", fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  
+  // Canvas settings
+  width       Int      @default(1920)
+  height      Int      @default(1080)
+  
+  // Overlay configuration (JSON)
+  config      Json     @default("{}")
+  
+  // Browser source settings
+  isPublic    Boolean  @default(true)
+  urlSlug     String   @unique
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  widgets     OverlayWidget[]
+  
+  @@index([tenantId])
+  @@index([urlSlug])
+}
+
+model OverlayWidget {
+  id         String   @id @default(uuid())
+  overlayId  String
+  overlay    Overlay  @relation(fields: [overlayId], references: [id], onDelete: Cascade)
+  
+  // Widget type (alert, chat, goal, timer, etc.)
+  type       String
+  
+  // Position and size
+  x          Int      @default(0)
+  y          Int      @default(0)
+  width      Int      @default(300)
+  height     Int      @default(200)
+  zIndex     Int      @default(0)
+  
+  // Widget-specific configuration (JSON)
+  config     Json     @default("{}")
+  
+  // Styling
+  styles     Json     @default("{}")
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@index([overlayId])
+}
+
+

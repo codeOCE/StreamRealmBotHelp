@@ -69,9 +69,9 @@ export class MessageProcessor extends WorkerHost {
                     where: { twitchId: broadcasterId }
                 });
 
-                if (tenant?.botAccessToken) {
+                if (tenant?.encryptedBotAccessToken) {
                     try {
-                        botToken = this.security.decrypt(tenant.botAccessToken);
+                        botToken = this.security.decrypt(tenant.encryptedBotAccessToken);
                     } catch (e) {
                         this.logger.error(`Failed to decrypt bot token for ${broadcasterId}`);
                     }
@@ -93,10 +93,10 @@ export class MessageProcessor extends WorkerHost {
                 const res = await this.twitchApi.sendChatMessage(broadcasterId, botInfo.id, message, replyTo, botToken);
 
                 // Auto-refresh token on 401
-                if (!res.success && (res.error?.includes('401') || res.error?.includes('Unauthorized')) && tenant?.botRefreshToken) {
+                if (!res.success && (res.error?.includes('401') || res.error?.includes('Unauthorized')) && tenant?.encryptedBotRefreshToken) {
                     this.logger.warn(`Helix 401 Unauthorized. Attempting to refresh bot token for tenant ${tenant.id}...`);
                     try {
-                        const refreshToken = this.security.decrypt(tenant.botRefreshToken);
+                        const refreshToken = this.security.decrypt(tenant.encryptedBotRefreshToken);
                         const refreshResult = await this.twitchApi.refreshUserToken(refreshToken);
 
                         if (refreshResult) {
@@ -107,8 +107,8 @@ export class MessageProcessor extends WorkerHost {
                             await this.prisma.tenant.update({
                                 where: { id: tenant.id },
                                 data: {
-                                    botAccessToken: newEncryptedAccess,
-                                    botRefreshToken: newEncryptedRefresh
+                                    encryptedBotAccessToken: newEncryptedAccess,
+                                    encryptedBotRefreshToken: newEncryptedRefresh
                                 }
                             });
 

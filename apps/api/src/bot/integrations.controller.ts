@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Logger, Res } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, Logger, Res, BadRequestException, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { IntegrationsService } from './integrations.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { BotManagerService } from './bot-manager.service';
 import { VariableParserService } from './variable-parser.service';
 import { SecurityService } from '../common/security/security.service';
+import { TwitchAuthGuard } from '../auth/twitch-auth.guard';
 
 @Controller('integrations')
 export class IntegrationsController {
@@ -20,12 +21,10 @@ export class IntegrationsController {
 
     @Get()
     async getIntegrations(@Query('tenantId') tenantId: string) {
-        let tid = tenantId;
-        if (!tid) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tid = tenant?.id || 'default';
+        if (!tenantId) {
+            throw new BadRequestException('tenantId query parameter is required');
         }
-        return this.integrationsService.getIntegrations(tid);
+        return this.integrationsService.getIntegrations(tenantId);
     }
 
     @Post('link/:provider')
@@ -42,6 +41,7 @@ export class IntegrationsController {
     }
 
     @Delete(':provider')
+    @UseGuards(TwitchAuthGuard)
     async unlinkIntegration(
         @Param('provider') provider: string,
         @Query('tenantId') tenantId: string
@@ -96,19 +96,18 @@ export class IntegrationsController {
 
     // Bot Presence Management
     @Post('bot/join')
+    @UseGuards(TwitchAuthGuard)
     async joinBot(@Body() data: { tenantId: string }) {
-        let tid = data.tenantId;
-        if (!tid) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tid = tenant?.id || 'default';
+        if (!data.tenantId) {
+            throw new BadRequestException('tenantId is required in request body');
         }
 
-        const tenant = await this.prisma.tenant.findUnique({ where: { id: tid } });
+        const tenant = await this.prisma.tenant.findUnique({ where: { id: data.tenantId } });
         if (!tenant) throw new Error('Tenant not found');
 
         // Mark tenant as connected (using global bot from .env)
         await this.prisma.tenant.update({
-            where: { id: tid },
+            where: { id: data.tenantId },
             data: { isConnected: true }
         });
 
@@ -122,6 +121,7 @@ export class IntegrationsController {
     }
 
     @Post('bot/leave')
+    @UseGuards(TwitchAuthGuard)
     async leaveBot(@Body() data: { tenantId: string }) {
         let tid = data.tenantId;
         if (!tid) {
@@ -166,8 +166,8 @@ export class IntegrationsController {
             where: { id: tid },
             data: {
                 isConnected: false,
-                botAccessToken: null,
-                botRefreshToken: null,
+                encryptedBotAccessToken: null,
+                encryptedBotRefreshToken: null,
                 botUsername: null,
                 targetChannel: null
             }

@@ -1,28 +1,31 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { TwitchAuthGuard } from './twitch-auth.guard';
 
 @Controller('user')
 export class UserController {
     constructor(private prisma: PrismaService) { }
 
     @Get('me')
+    @UseGuards(TwitchAuthGuard)
     async getCurrentUser(@Req() req: any) {
-        // For now, return the first user (we'll implement proper session later)
-        const user = await this.prisma.user.findFirst({
+        // Get authenticated user from request (set by TwitchAuthGuard)
+        if (!req.user?.id) {
+            throw new UnauthorizedException('User not authenticated');
+        }
+
+        const user = await this.prisma.user.findUnique({
+            where: { id: req.user.id },
             select: {
                 id: true,
                 twitchId: true,
                 username: true,
-                email: true,
+                // email excluded for security
             },
         });
 
         if (!user) {
-            return {
-                username: 'Guest',
-                avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=guest',
-                tenantId: null,
-            };
+            throw new UnauthorizedException('User not found');
         }
 
         // Get the tenant for this user

@@ -7,8 +7,8 @@ interface Timer {
     id: string;
     name: string;
     message: string;
-    interval: number;
-    minLines: number;
+    intervalSeconds: number;
+    chatLines: number;
     enabled: boolean;
 }
 
@@ -127,11 +127,11 @@ export default function TimersPage() {
                             <div className="pt-6 border-t border-white/[0.05] grid grid-cols-3 gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 block">Frequency</label>
-                                    <p className="text-white font-black text-xs">{timer.interval}m</p>
+                                    <p className="text-white font-black text-xs">{Math.floor(timer.intervalSeconds / 60)}m</p>
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 block">Min Lines</label>
-                                    <p className="text-white font-black text-xs">{timer.minLines} msgs</p>
+                                    <p className="text-white font-black text-xs">{timer.chatLines} msgs</p>
                                 </div>
                                 <div className="flex justify-end items-end gap-2">
                                     <button

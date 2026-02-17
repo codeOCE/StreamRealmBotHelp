@@ -13,7 +13,7 @@ export class AuthController {
     @Get('twitch/callback')
     @UseGuards(TwitchAuthGuard)
     async twitchAuthCallback(@Req() req: Request, @Res() res: Response) {
-        res.redirect('http://localhost:3002/dashboard?connected=true');
+        res.redirect('http://localhost:4000/dashboard?connected=true');
     }
 
     @Get('bot')
@@ -25,6 +25,6 @@ export class AuthController {
     @Get('bot/callback')
     @UseGuards(TwitchAuthGuard)
     async botAuthCallback(@Req() req: Request, @Res() res: Response) {
-        res.redirect('http://localhost:3002/dashboard/settings?botConnected=true');
+        res.redirect('http://localhost:4000/dashboard/settings?botConnected=true');
     }
 }

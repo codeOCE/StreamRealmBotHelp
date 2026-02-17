@@ -58,8 +58,12 @@ export class ImportService {
                     throw new Error(`Command missing trigger: ${JSON.stringify(cmd)}`);
                 }
 
-                // Sanitize trigger: Ensure exactly one '!' at the start
-                trigger = '!' + trigger.replace(/^!+/, '');
+                // Sanitize trigger: Remove all leading '!' as DB stores triggers without prefix
+                trigger = trigger.replace(/^!+/, '');
+
+                // Process responses with variable conversion
+                const rawResponse = cmd.reply || cmd.response || (cmd.responses ? cmd.responses[0] : '');
+                const response = this.convertVariables(rawResponse, provider);
 
                 // Check if command already exists
                 const existing = await this.prisma.command.findFirst({
@@ -84,7 +88,7 @@ export class ImportService {
                     data: {
                         tenantId,
                         trigger,
-                        responses: cmd.responses || [cmd.response || cmd.reply || ''],
+                        responses: [response],
                         enabled: cmd.enabled ?? true, // Default to true if missing
                         description: cmd.description || `Imported from ${provider}`,
                         isBuiltIn: false,
@@ -107,5 +111,64 @@ export class ImportService {
         }
 
         return { imported, skipped, failed, failedCommands };
+    }
+
+    private convertVariables(response: string, provider: string): string {
+        if (!response) return '';
+        let converted = response;
+        const p = provider.toLowerCase();
+
+        // StreamElements Conversions
+        if (p.includes('streamelement') || p === 'se') {
+            const mappings: [RegExp, string][] = [
+                // Complex structures - must come FIRST before basic variable conversions
+                // ${if condition;trueBranch;falseBranch} -> $(if condition; trueBranch; falseBranch)
+                [/\$\{if\s+/gi, '$(if '],
+                // ${urlfetch URL} -> $(urlfetch URL)
+                [/\$\{urlfetch\s+/gi, '$(urlfetch '],
+
+                // Basic variables
+                [/\$\{user\}/gi, '$(user)'],
+                [/\$\{user\.name\}/gi, '$(user)'],
+                [/\$\{touser\}/gi, '$(touser)'],
+                [/\$\{channel\}/gi, '$(channel)'],
+                [/\$\{channel\.name\}/gi, '$(channel)'],
+                [/\$\{game\}/gi, '$(game)'],
+                [/\$\{status\}/gi, '$(title)'],
+                [/\$\{title\}/gi, '$(title)'],
+                [/\$\{count\}/gi, '$(count)'],
+                [/\$\{query\}/gi, '$(query)'],
+                [/\$\{querystring\}/gi, '$(query)'],
+                [/\$\{random\.chatter\}/gi, '$(random.chatter)'],
+
+                // Arguments ${1}, ${2} etc
+                [/\$\{(\d+)\}/g, '$($1)'],
+                // Arguments range ${1:}, ${2:} etc
+                [/\$\{(\d+):\}/g, '$($1:)'],
+
+                // Arguments @{args[0]} -> $(touser) - has built-in fallback to sender
+                [/@\{args\[0\]\}/gi, '$(touser)'],
+                [/@\{args\[0\]\.name\}/gi, '$(touser)'],
+                // Other arguments @{args[N]} -> $(N)
+                [/@\{args\[(\d+)\]\}/gi, '$(($1))'],
+                [/@\{args\[(\d+)\]\.name\}/gi, '$(($1))'],
+
+
+                // Random range ${random.1-100} or ${random.range.1-100} -> $(random.range 1 100)
+                [/\$\{random\.(?:range\.)?(\d+)[-.](\ d+)\}/gi, '$(random.range $1 $2)'],
+                // StreamElements also uses $(random.0-100) with parentheses
+                [/\$\(random\.(\d+)-(\d+)\)/gi, '$(random.range $1 $2)'],
+
+                // Final cleanup: convert any remaining ${...} to $(...)
+                [/\$\{/g, '$('],
+                [/\}/g, ')'],
+            ];
+
+            for (const [pattern, replacement] of mappings) {
+                converted = converted.replace(pattern, replacement);
+            }
+        }
+
+        return converted;
     }
 }

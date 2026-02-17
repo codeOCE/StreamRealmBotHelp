@@ -19,5 +19,9 @@
   "description": "",
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "nanoid": "^5.1.6",
+    "socket.io-client": "^4.8.3"
   }
 }

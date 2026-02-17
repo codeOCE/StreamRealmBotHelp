@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { TwitchApiService } from './twitch-api.service';
 import { BotEventsGateway } from './bot-events.gateway';
@@ -24,6 +24,7 @@ export class ChatHandlerService {
         private moderation: ModerationService,
         private xp: XpService,
         private variableService: VariableService,
+        @Inject(forwardRef(() => TimerService))
         private timerService: TimerService,
         private twitchApiService: TwitchApiService,
         private botEvents: BotEventsGateway,
@@ -91,7 +92,7 @@ export class ChatHandlerService {
 
         // 4. Timer Check (Non-blocking)
         this.timerService.handleMessage(tenantId, channelName)
-            .catch(err => this.logger.error(`[MSG] Timer check failed`, err));
+            .catch((err: any) => this.logger.error(`[MSG] Timer check failed`, err));
 
         // 5. Logging (Non-blocking)
         this.logChat(tenantId, userstate, message)
