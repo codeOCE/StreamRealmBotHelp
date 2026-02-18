@@ -23,7 +23,7 @@ export default function TimersPage() {
     const fetchTimers = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(API_BASE);
+            const res = await fetch(API_BASE, { credentials: 'include' });
             const data = await res.json();
             setTimers(data);
         } catch (err) {
@@ -44,12 +44,14 @@ export default function TimersPage() {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(timerData),
+                    credentials: 'include',
                 });
             } else {
                 await fetch(API_BASE, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(timerData),
+                    credentials: 'include',
                 });
             }
             fetchTimers();
@@ -62,7 +64,10 @@ export default function TimersPage() {
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this timer?')) return;
         try {
-            await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+            await fetch(`${API_BASE}/${id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
             fetchTimers();
         } catch (err) {
             console.error('Failed to delete timer', err);
@@ -75,6 +80,7 @@ export default function TimersPage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled }),
+                credentials: 'include',
             });
             setTimers(timers.map(t => t.id === id ? { ...t, enabled } : t));
         } catch (err) {

@@ -79,12 +79,14 @@ export default function CommandsPage() {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(commandData),
+                    credentials: 'include',
                 });
             } else {
                 await fetch(API_BASE, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(commandData),
+                    credentials: 'include',
                 });
             }
             fetchCommands();
@@ -97,7 +99,10 @@ export default function CommandsPage() {
     const handleDeleteAll = async () => {
         if (!confirm('Are you sure you want to DELETE ALL custom commands? This cannot be undone.')) return;
         try {
-            const res = await fetch(`${API_BASE}/bulk`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE}/bulk`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
             if (res.ok) {
                 const result = await res.json();
                 toast.success(`Deleted ${result.count} commands.`);
@@ -114,7 +119,10 @@ export default function CommandsPage() {
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this command?')) return;
         try {
-            await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+            await fetch(`${API_BASE}/${id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
             fetchCommands();
         } catch (err) {
             console.error('Failed to delete command', err);
@@ -127,6 +135,7 @@ export default function CommandsPage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled }),
+                credentials: 'include',
             });
             setCommands(commands.map(c => c.id === id ? { ...c, enabled } : c));
         } catch (err) {
@@ -140,6 +149,7 @@ export default function CommandsPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ commands: importCommands }),
+                credentials: 'include',
             });
             const results = await res.json();
 

@@ -70,6 +70,7 @@ export default function ModerationPage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled }),
+                credentials: 'include',
             });
         } catch (err) {
             console.error('Failed to toggle rule', err);
@@ -84,6 +85,7 @@ export default function ModerationPage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings),
+                credentials: 'include',
             });
         } catch (err) {
             console.error('Failed to update rule settings', err);

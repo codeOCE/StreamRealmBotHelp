@@ -23,8 +23,8 @@ export default function XPPage() {
         try {
             setIsLoading(true);
             const [lbRes, setRes] = await Promise.all([
-                fetch(`${API_BASE}/leaderboard`),
-                fetch(`${API_BASE}/settings`)
+                fetch(`${API_BASE}/leaderboard`, { credentials: 'include' }),
+                fetch(`${API_BASE}/settings`, { credentials: 'include' })
             ]);
             const lbData = await lbRes.json();
             const setData = await setRes.json();
@@ -58,6 +58,7 @@ export default function XPPage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newSettings),
+                credentials: 'include',
             });
         } catch (err) {
             console.error('Failed to update loyalty settings', err);

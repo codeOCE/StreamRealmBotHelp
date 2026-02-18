@@ -41,7 +41,8 @@ export function CommandTester() {
                     trigger,
                     args,
                     username
-                })
+                }),
+                credentials: 'include',
             });
 
             if (!res.ok) {
