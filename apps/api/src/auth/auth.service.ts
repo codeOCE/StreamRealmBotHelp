@@ -105,19 +105,17 @@ export class AuthService {
                     { trigger: 'editcom', responses: [], responseType: 'SAY', isBuiltIn: true, description: 'Edit a custom command (mod only)' },
                 ];
 
-                for (const cmd of defaultCommands) {
-                    await this.prisma.command.create({
-                        data: {
-                            tenantId: tenant.id,
-                            trigger: cmd.trigger,
-                            responses: cmd.responses,
-                            isBuiltIn: cmd.isBuiltIn,
-                            enabled: true,
-                            description: cmd.description,
-                            responseType: (cmd.responseType as any),
-                        }
-                    });
-                }
+                await this.prisma.command.createMany({
+                    data: defaultCommands.map(cmd => ({
+                        tenantId: tenant.id,
+                        trigger: cmd.trigger,
+                        responses: cmd.responses,
+                        isBuiltIn: cmd.isBuiltIn,
+                        enabled: true,
+                        description: cmd.description,
+                        responseType: (cmd.responseType as any),
+                    }))
+                });
             }
 
             // Trigger bot to join the target channel immediately
