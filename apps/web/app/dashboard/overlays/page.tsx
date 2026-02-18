@@ -34,6 +34,12 @@ export default function OverlaysPage() {
             const tenantId = userData.tenantId;
 
             const res = await fetch(`/api/overlays?tenantId=${tenantId}`);
+            if (!res.ok) {
+                console.error('Failed to fetch overlays:', res.status, res.statusText);
+                setOverlays([]);
+                return;
+            }
+
             const data = await res.json();
             if (Array.isArray(data)) {
                 setOverlays(data);
@@ -160,7 +166,7 @@ export default function OverlaysPage() {
 
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => router.push(`/dashboard/overlays/${overlay.id}/editor`)}
+                                    onClick={() => router.push(`/editor/${overlay.id}`)}
                                     className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded transition"
                                 >
                                     <Edit size={16} />

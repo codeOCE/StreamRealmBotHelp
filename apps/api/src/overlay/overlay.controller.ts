@@ -10,10 +10,12 @@ import {
     UseGuards,
     Req,
     Logger,
+    UnauthorizedException,
 } from '@nestjs/common';
 import { OverlayService } from './overlay.service';
 import { OverlayWidgetService } from './overlay-widget.service';
 import { AuthenticatedGuard } from '../auth/authenticated.guard';
+import { PrismaService } from '../common/prisma/prisma.service';
 
 @Controller('overlays')
 export class OverlayController {
@@ -22,20 +24,38 @@ export class OverlayController {
     constructor(
         private overlayService: OverlayService,
         private widgetService: OverlayWidgetService,
+        private prisma: PrismaService,
     ) { }
+
+    private async getTenantId(request: any): Promise<string> {
+        const user = request.user;
+        if (!user) {
+            throw new UnauthorizedException('User not authenticated');
+        }
+        
+        const tenant = await this.prisma.tenant.findFirst({
+            where: { ownerId: user.id }
+        });
+
+        if (!tenant) {
+            throw new UnauthorizedException('No tenant found for user');
+        }
+        return tenant.id;
+    }
 
     // ===== Overlay Management =====
 
     @Get()
     @UseGuards(AuthenticatedGuard)
-    async getOverlays(@Query('tenantId') tenantId: string) {
+    async getOverlays(@Req() req: any) {
+        const tenantId = await this.getTenantId(req);
         return this.overlayService.getOverlays(tenantId);
     }
 
     @Post()
     @UseGuards(AuthenticatedGuard)
     async createOverlay(
-        @Query('tenantId') tenantId: string,
+        @Req() req: any,
         @Body() data: {
             name: string;
             description?: string;
@@ -43,6 +63,7 @@ export class OverlayController {
             height?: number;
         }
     ) {
+        const tenantId = await this.getTenantId(req);
         return this.overlayService.createOverlay(tenantId, data);
     }
 
@@ -50,8 +71,9 @@ export class OverlayController {
     @UseGuards(AuthenticatedGuard)
     async getOverlay(
         @Param('id') id: string,
-        @Query('tenantId') tenantId: string
+        @Req() req: any
     ) {
+        const tenantId = await this.getTenantId(req);
         return this.overlayService.getOverlay(id, tenantId);
     }
 
@@ -59,7 +81,7 @@ export class OverlayController {
     @UseGuards(AuthenticatedGuard)
     async updateOverlay(
         @Param('id') id: string,
-        @Query('tenantId') tenantId: string,
+        @Req() req: any,
         @Body() data: {
             name?: string;
             description?: string;
@@ -69,6 +91,7 @@ export class OverlayController {
             isPublic?: boolean;
         }
     ) {
+        const tenantId = await this.getTenantId(req);
         return this.overlayService.updateOverlay(id, tenantId, data);
     }
 
@@ -76,8 +99,9 @@ export class OverlayController {
     @UseGuards(AuthenticatedGuard)
     async deleteOverlay(
         @Param('id') id: string,
-        @Query('tenantId') tenantId: string
+        @Req() req: any
     ) {
+        const tenantId = await this.getTenantId(req);
         return this.overlayService.deleteOverlay(id, tenantId);
     }
 
@@ -85,8 +109,9 @@ export class OverlayController {
     @UseGuards(AuthenticatedGuard)
     async getBrowserSourceUrl(
         @Param('id') id: string,
-        @Query('tenantId') tenantId: string
+        @Req() req: any
     ) {
+        const tenantId = await this.getTenantId(req);
         const overlay = await this.overlayService.getOverlay(id, tenantId);
         const url = this.overlayService.getBrowserSourceUrl(overlay.urlSlug);
         return { url };
@@ -98,7 +123,7 @@ export class OverlayController {
     @UseGuards(AuthenticatedGuard)
     async addWidget(
         @Param('id') overlayId: string,
-        @Query('tenantId') tenantId: string,
+        @Req() req: any,
         @Body() data: {
             type: string;
             x?: number;
@@ -109,6 +134,7 @@ export class OverlayController {
             styles?: any;
         }
     ) {
+        const tenantId = await this.getTenantId(req);
         return this.widgetService.addWidget(overlayId, tenantId, data);
     }
 
@@ -116,7 +142,7 @@ export class OverlayController {
     @UseGuards(AuthenticatedGuard)
     async updateWidget(
         @Param('widgetId') widgetId: string,
-        @Query('tenantId') tenantId: string,
+        @Req() req: any,
         @Body() data: {
             x?: number;
             y?: number;
@@ -127,6 +153,7 @@ export class OverlayController {
             styles?: any;
         }
     ) {
+        const tenantId = await this.getTenantId(req);
         return this.widgetService.updateWidget(widgetId, tenantId, data);
     }
 
@@ -134,8 +161,9 @@ export class OverlayController {
     @UseGuards(AuthenticatedGuard)
     async deleteWidget(
         @Param('widgetId') widgetId: string,
-        @Query('tenantId') tenantId: string
+        @Req() req: any
     ) {
+        const tenantId = await this.getTenantId(req);
         return this.widgetService.deleteWidget(widgetId, tenantId);
     }
 
@@ -143,9 +171,10 @@ export class OverlayController {
     @UseGuards(AuthenticatedGuard)
     async reorderWidgets(
         @Param('id') overlayId: string,
-        @Query('tenantId') tenantId: string,
+        @Req() req: any,
         @Body() data: { widgetOrder: string[] }
     ) {
+        const tenantId = await this.getTenantId(req);
         return this.widgetService.reorderWidgets(overlayId, tenantId, data.widgetOrder);
     }
 

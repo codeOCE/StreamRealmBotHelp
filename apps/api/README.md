@@ -25,6 +25,88 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Troubleshooting Twitch 401 Unauthorized Errors
+
+If you're experiencing 401 Unauthorized errors when testing in your localhost environment, here are the most common causes and solutions:
+
+### 1. Missing or Incorrect Environment Variables
+
+**Problem**: The `TWITCH_CLIENT_ID` or `TWITCH_CLIENT_SECRET` are missing or incorrect.
+
+**Solution**:
+- Check that you have a `.env` file in the `apps/api/` directory
+- Ensure the following variables are set:
+  ```
+  TWITCH_CLIENT_ID=your_client_id_here
+  TWITCH_CLIENT_SECRET=your_client_secret_here
+  TWITCH_REDIRECT_URI=http://localhost:3001/auth/twitch/callback
+  ```
+- Get these values from your [Twitch Developer Console](https://dev.twitch.tv/console/apps)
+- The application will now validate these on startup and log warnings if they're missing
+
+### 2. Redirect URI Mismatch
+
+**Problem**: The `TWITCH_REDIRECT_URI` in your `.env` file doesn't match what's configured in your Twitch app.
+
+**Solution**:
+- Go to your [Twitch Developer Console](https://dev.twitch.tv/console/apps)
+- Click on your app → Settings
+- Under "OAuth Redirect URLs", make sure you have added:
+  - `http://localhost:3001/auth/twitch/callback` (or whatever port you're using)
+- The redirect URI must match **exactly** (including http vs https, port number, trailing slashes)
+
+### 3. Invalid Client Credentials
+
+**Problem**: The Client ID or Client Secret are incorrect or the app was deleted/regenerated.
+
+**Solution**:
+- Verify your credentials in the [Twitch Developer Console](https://dev.twitch.tv/console/apps)
+- If you regenerated the Client Secret, make sure to update it in your `.env` file
+- Restart your application after updating environment variables
+
+### 4. Token Expiration
+
+**Problem**: App access tokens expire after a certain time, and the refresh mechanism may fail.
+
+**Solution**:
+- The application now automatically handles token refresh
+- Check the logs for messages like "Fetching new Twitch App Access Token..."
+- If you see repeated 401 errors, check that `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET` are correct
+
+### 5. Localhost vs Production Configuration
+
+**Problem**: Your Twitch app might be configured for production URLs only.
+
+**Solution**:
+- Make sure your Twitch app allows localhost redirects
+- In the Twitch Developer Console, add `http://localhost:3001/auth/twitch/callback` to OAuth Redirect URLs
+- Some Twitch apps require you to explicitly enable localhost in the app settings
+
+### Debugging Tips
+
+1. **Check startup logs**: The application now validates environment variables on startup. Look for:
+   - ✅ "All required Twitch environment variables are present"
+   - ❌ "Missing required Twitch environment variables"
+
+2. **Check API logs**: When a 401 error occurs, you'll now see detailed error messages including:
+   - Which API call failed
+   - Whether the token or Client-ID is missing
+   - The full error response from Twitch
+
+3. **Test token generation**: The app token is generated automatically. Check logs for:
+   - "Fetching new Twitch App Access Token..."
+   - "Generated new App Access Token. Expires in Xs"
+   - Any errors during token generation
+
+4. **Verify your .env file location**: Make sure your `.env` file is in `apps/api/.env` (not the root directory)
+
+### Still Having Issues?
+
+- Double-check all environment variables are set correctly
+- Verify your Twitch app is active (not deleted or suspended)
+- Check that you're using the correct port in both your `.env` and Twitch app settings
+- Review the application logs for specific error messages
+
 ## Project setup
 
 ```bash

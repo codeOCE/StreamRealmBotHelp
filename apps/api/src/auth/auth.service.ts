@@ -24,6 +24,7 @@ export class AuthService {
             tokenExpiresAt.setHours(tokenExpiresAt.getHours() + 4);
 
             // Upsert User (Streamer / Owner)
+            console.log(`[AuthService] Upserting user ${username} (${twitchId})...`);
             const user = await this.prisma.user.upsert({
                 where: { twitchId },
                 update: {
@@ -42,6 +43,7 @@ export class AuthService {
                     tokenExpiresAt,
                 },
             });
+            console.log(`[AuthService] User upserted: ${user.id} (username: ${user.username})`);
 
             // Ensure Tenant exists, and set targetChannel to the user's login by default
             const tenant = await this.prisma.tenant.upsert({
@@ -147,6 +149,8 @@ export class AuthService {
         // Trigger bot to join the target channel with its NEW identity
         await this.botManager.joinChannel((tenant as any).targetChannel || tenant.name);
 
-        return tenant;
+        // Return the User (Owner) to keep the session valid/logged in
+        const user = await this.prisma.user.findUnique({ where: { twitchId: ownerTwitchId } });
+        return user;
     }
 }

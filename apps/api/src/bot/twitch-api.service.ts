@@ -52,6 +52,11 @@ export class TwitchApiService {
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
         const clientSecret = this.configService.get<string>('TWITCH_CLIENT_SECRET');
 
+        if (!clientId || !clientSecret) {
+            this.logger.error('getAppToken: Missing required environment variables. TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET must be set.');
+            return null;
+        }
+
         this.logger.log('Fetching new Twitch App Access Token...');
 
         try {
@@ -61,6 +66,8 @@ export class TwitchApiService {
 
             if (!response.ok) {
                 const errorText = await response.text();
+                this.logger.error(`Failed to get app token: ${response.status} ${response.statusText} - ${errorText}`);
+                this.logger.error('Check that TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET are correct in your .env file');
                 throw new Error(`Failed to get app token: ${response.status} ${response.statusText} - ${errorText}`);
             }
 
@@ -78,18 +85,38 @@ export class TwitchApiService {
 
     async getStreamInfo(channelName: string) {
         const token = await this.getAppToken();
-        if (!token) return null;
+        if (!token) {
+            this.logger.warn('getStreamInfo: No app token available');
+            return null;
+        }
 
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        if (!clientId) {
+            this.logger.error('getStreamInfo: TWITCH_CLIENT_ID is missing');
+            return null;
+        }
+
         const channel = channelName.replace('#', '');
 
         try {
             const response = await fetch(`https://api.twitch.tv/helix/streams?user_login=${channel}`, {
                 headers: {
-                    'Client-ID': clientId!,
+                    'Client-ID': clientId,
                     'Authorization': `Bearer ${token}`,
                 },
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                if (response.status === 401) {
+                    this.logger.error(`getStreamInfo: 401 Unauthorized - Token may be invalid. Client-ID: ${clientId ? 'present' : 'missing'}`);
+                    // Force token refresh on next call
+                    this.accessToken = null;
+                } else {
+                    this.logger.error(`getStreamInfo: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                return null;
+            }
 
             const data = await response.json() as any;
             return data.data?.[0] || null;
@@ -101,17 +128,35 @@ export class TwitchApiService {
 
     async getUserFollow(broadcasterId: string, userId: string) {
         const token = await this.getAppToken();
-        if (!token) return null;
+        if (!token) {
+            this.logger.warn('getUserFollow: No app token available');
+            return null;
+        }
 
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        if (!clientId) {
+            this.logger.error('getUserFollow: TWITCH_CLIENT_ID is missing');
+            return null;
+        }
 
         try {
             const response = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${broadcasterId}&user_id=${userId}`, {
                 headers: {
-                    'Client-ID': clientId!,
+                    'Client-ID': clientId,
                     'Authorization': `Bearer ${token}`,
                 },
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                if (response.status === 401) {
+                    this.logger.error(`getUserFollow: 401 Unauthorized - Token may be invalid`);
+                    this.accessToken = null;
+                } else {
+                    this.logger.error(`getUserFollow: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                return null;
+            }
 
             const data = await response.json() as any;
             return data.data?.[0] || null;
@@ -127,17 +172,35 @@ export class TwitchApiService {
         }
 
         const token = await this.getAppToken();
-        if (!token) return null;
+        if (!token) {
+            this.logger.warn('getUserInfo: No app token available');
+            return null;
+        }
 
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        if (!clientId) {
+            this.logger.error('getUserInfo: TWITCH_CLIENT_ID is missing');
+            return null;
+        }
 
         try {
             const response = await fetch(`https://api.twitch.tv/helix/users?login=${login}`, {
                 headers: {
-                    'Client-ID': clientId!,
+                    'Client-ID': clientId,
                     'Authorization': `Bearer ${token}`,
                 },
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                if (response.status === 401) {
+                    this.logger.error(`getUserInfo: 401 Unauthorized - Token may be invalid`);
+                    this.accessToken = null;
+                } else {
+                    this.logger.error(`getUserInfo: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                return null;
+            }
 
             const data = await response.json() as any;
             const user = data.data?.[0];
@@ -153,17 +216,35 @@ export class TwitchApiService {
 
     async getUserInfoById(userId: string) {
         const token = await this.getAppToken();
-        if (!token) return null;
+        if (!token) {
+            this.logger.warn('getUserInfoById: No app token available');
+            return null;
+        }
 
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        if (!clientId) {
+            this.logger.error('getUserInfoById: TWITCH_CLIENT_ID is missing');
+            return null;
+        }
 
         try {
             const response = await fetch(`https://api.twitch.tv/helix/users?id=${userId}`, {
                 headers: {
-                    'Client-ID': clientId!,
+                    'Client-ID': clientId,
                     'Authorization': `Bearer ${token}`,
                 },
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                if (response.status === 401) {
+                    this.logger.error(`getUserInfoById: 401 Unauthorized - Token may be invalid`);
+                    this.accessToken = null;
+                } else {
+                    this.logger.error(`getUserInfoById: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                return null;
+            }
 
             const data = await response.json() as any;
             return data.data?.[0] || null;
@@ -175,17 +256,35 @@ export class TwitchApiService {
 
     async getFollowerCount(broadcasterId: string) {
         const token = await this.getAppToken();
-        if (!token) return 0;
+        if (!token) {
+            this.logger.warn('getFollowerCount: No app token available');
+            return 0;
+        }
 
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        if (!clientId) {
+            this.logger.error('getFollowerCount: TWITCH_CLIENT_ID is missing');
+            return 0;
+        }
 
         try {
             const response = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${broadcasterId}`, {
                 headers: {
-                    'Client-ID': clientId!,
+                    'Client-ID': clientId,
                     'Authorization': `Bearer ${token}`,
                 },
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                if (response.status === 401) {
+                    this.logger.error(`getFollowerCount: 401 Unauthorized - Token may be invalid`);
+                    this.accessToken = null;
+                } else {
+                    this.logger.error(`getFollowerCount: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                return 0;
+            }
 
             const data = await response.json() as any;
             return data.total || 0;
@@ -203,17 +302,35 @@ export class TwitchApiService {
 
     async getChannelInfo(broadcasterId: string) {
         const token = await this.getAppToken();
-        if (!token) return null;
+        if (!token) {
+            this.logger.warn('getChannelInfo: No app token available');
+            return null;
+        }
 
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        if (!clientId) {
+            this.logger.error('getChannelInfo: TWITCH_CLIENT_ID is missing');
+            return null;
+        }
 
         try {
             const response = await fetch(`https://api.twitch.tv/helix/channels?broadcaster_id=${broadcasterId}`, {
                 headers: {
-                    'Client-ID': clientId!,
+                    'Client-ID': clientId,
                     'Authorization': `Bearer ${token}`,
                 },
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                if (response.status === 401) {
+                    this.logger.error(`getChannelInfo: 401 Unauthorized - Token may be invalid`);
+                    this.accessToken = null;
+                } else {
+                    this.logger.error(`getChannelInfo: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                return null;
+            }
 
             const data = await response.json() as any;
             return data.data?.[0] || null;
@@ -225,16 +342,23 @@ export class TwitchApiService {
 
     async sendChatMessage(broadcasterId: string, senderId: string, message: string, replyId?: string, accessToken?: string) {
         const token = accessToken || await this.getAppToken();
-        if (!token) return { success: false, error: 'Token missing' };
+        if (!token) {
+            this.logger.error('sendChatMessage: Token missing');
+            return { success: false, error: 'Token missing' };
+        }
 
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        if (!clientId) {
+            this.logger.error('sendChatMessage: TWITCH_CLIENT_ID is missing');
+            return { success: false, error: 'TWITCH_CLIENT_ID is missing' };
+        }
 
         try {
             this.logger.debug(`Helix: Sending message to ${broadcasterId} from ${senderId}: ${message}`);
             const response = await fetch('https://api.twitch.tv/helix/chat/messages', {
                 method: 'POST',
                 headers: {
-                    'Client-ID': clientId!,
+                    'Client-ID': clientId,
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
@@ -248,7 +372,15 @@ export class TwitchApiService {
 
             if (!response.ok) {
                 const body = await response.text();
-                this.logger.error(`Helix Send Error: ${response.status} ${response.statusText} - ${body}`);
+                if (response.status === 401) {
+                    this.logger.error(`Helix Send Error: 401 Unauthorized - Token may be invalid or expired. Response: ${body}`);
+                    // Force token refresh if using app token
+                    if (!accessToken) {
+                        this.accessToken = null;
+                    }
+                } else {
+                    this.logger.error(`Helix Send Error: ${response.status} ${response.statusText} - ${body}`);
+                }
                 return { success: false, error: body };
             }
 
@@ -261,18 +393,36 @@ export class TwitchApiService {
 
     async getLatestFollower(broadcasterId: string) {
         const token = await this.getAppToken();
-        if (!token) return null;
+        if (!token) {
+            this.logger.warn('getLatestFollower: No app token available');
+            return null;
+        }
 
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        if (!clientId) {
+            this.logger.error('getLatestFollower: TWITCH_CLIENT_ID is missing');
+            return null;
+        }
 
         try {
             // "The list of followers is returned sorted by when they started following the broadcaster, with the most recent followers first."
             const response = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${broadcasterId}&first=1`, {
                 headers: {
-                    'Client-ID': clientId!,
+                    'Client-ID': clientId,
                     'Authorization': `Bearer ${token}`,
                 },
             });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                if (response.status === 401) {
+                    this.logger.error(`getLatestFollower: 401 Unauthorized - Token may be invalid`);
+                    this.accessToken = null;
+                } else {
+                    this.logger.error(`getLatestFollower: ${response.status} ${response.statusText} - ${errorText}`);
+                }
+                return null;
+            }
 
             const data = await response.json() as any;
             return data.data?.[0]?.user_name || 'No followers';
@@ -339,15 +489,28 @@ export class TwitchApiService {
 
     private async getGameId(gameName: string, accessToken: string): Promise<string | null> {
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
+        if (!clientId) {
+            this.logger.error('getGameId: TWITCH_CLIENT_ID is missing');
+            return null;
+        }
         try {
             const response = await fetch(`https://api.twitch.tv/helix/games?name=${encodeURIComponent(gameName)}`, {
                 headers: {
-                    'Client-ID': clientId!,
+                    'Client-ID': clientId,
                     'Authorization': `Bearer ${accessToken}`,
                 },
             });
+            if (!response.ok) {
+                if (response.status === 401) {
+                    this.logger.error(`getGameId: 401 Unauthorized - Token may be invalid`);
+                }
+                return null;
+            }
             const data = await response.json() as any;
             return data.data?.[0]?.id || null;
-        } catch { return null; }
+        } catch (err) {
+            this.logger.error(`getGameId: Error fetching game ID for ${gameName}`, err);
+            return null;
+        }
     }
 }

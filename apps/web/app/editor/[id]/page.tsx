@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { EditorLayout } from './components/EditorLayout';
 import { useEditor } from './store';
 import { EditorProvider } from './store';
 
@@ -71,13 +70,6 @@ function EditorContent() {
         );
     }
 
-    // Render the actual layout once data is loaded
-    // We render EditorLayout *inside* here because EditorLayout normally *provides* the context,
-    // but we need the context *above* this to dispatch the initial data.
-    // Actually, looking at my EditorLayout.tsx, it HAS the provider inside it.
-    // This needs a slight refactor. I should pull the Provider OUT of EditorLayout to separate concerns.
-    // BUT, for now, I will use a composed approach.
-
     return (
         <div className="flex flex-col h-screen bg-neutral-950 text-white overflow-hidden">
             {/* We manually compose the layout components here since we are already inside the Provider */}
@@ -87,7 +79,6 @@ function EditorContent() {
             <div className="flex-1 flex overflow-hidden">
                 <LeftPanelProxy />
                 <CanvasProxy />
-                <RightPanelProxy />
             </div>
         </div>
     );
@@ -96,10 +87,8 @@ function EditorContent() {
 // Proxies to strict lazy loading or just cleanliness
 import { TopToolbar } from './components/TopToolbar';
 import { LeftSidebar } from './components/LeftSidebar';
-import { RightSidebar } from './components/RightSidebar';
 import { CanvasArea } from './components/CanvasArea';
 
 function TopBarProxy() { return <TopToolbar />; }
 function LeftPanelProxy() { return <LeftSidebar />; }
-function RightPanelProxy() { return <RightSidebar />; }
 function CanvasProxy() { return <CanvasArea />; }
