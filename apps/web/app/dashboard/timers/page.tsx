@@ -18,7 +18,7 @@ export default function TimersPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTimer, setEditingTimer] = useState<Timer | undefined>(undefined);
 
-    const API_BASE = 'http://localhost:3001/timers';
+    const API_BASE = '/api/timers';
 
     const fetchTimers = async () => {
         try {

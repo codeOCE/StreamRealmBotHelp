@@ -1,13 +1,13 @@
 import { Controller, Get, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { TwitchAuthGuard } from './twitch-auth.guard';
+import { AuthenticatedGuard } from './authenticated.guard';
 
 @Controller('user')
 export class UserController {
     constructor(private prisma: PrismaService) { }
 
     @Get('me')
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async getCurrentUser(@Req() req: any) {
         // Get authenticated user from request (set by TwitchAuthGuard)
         if (!req.user?.id) {

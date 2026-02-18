@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
 import { CommandsService } from './commands.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ExternalBotService } from './external-bot.service';
+import { AuthenticatedGuard } from '../auth/authenticated.guard';
 
 @Controller('commands')
+@UseGuards(AuthenticatedGuard)
 export class CommandsController {
     constructor(
         private commandsService: CommandsService,
@@ -11,41 +13,45 @@ export class CommandsController {
         private externalBotService: ExternalBotService
     ) { }
 
-    // NOTE: In production, tenantId would be extracted from the JWT/Session
+    private async getTenantId(request: any): Promise<string> {
+        const user = request.user;
+        if (!user) {
+            throw new UnauthorizedException('User not authenticated');
+        }
+        // Assuming user.tenants is populated or we fetch the tenant based on ownership
+        // For simplicity in this iteration, we fetch the tenant owned by the user
+        const tenant = await this.prisma.tenant.findFirst({
+            where: { ownerId: user.id }
+        });
+
+        if (!tenant) {
+            throw new UnauthorizedException('No tenant found for user');
+        }
+        return tenant.id;
+    }
 
     @Get()
-    async getCommands(@Query('tenantId') tenantId: string) {
-        let finalTenantId = tenantId;
-        if (!finalTenantId) {
-            const tenant = await this.prisma.tenant.findFirst();
-            finalTenantId = tenant?.id || 'default';
-        }
-        return this.commandsService.findAll(finalTenantId);
+    async getCommands(@Req() req: any) {
+        const tenantId = await this.getTenantId(req);
+        return this.commandsService.findAll(tenantId);
     }
 
     @Post()
-    async createCommand(@Body() data: any) {
-        let tenantId = data.tenantId;
-        if (!tenantId) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tenantId = tenant?.id || 'default';
-        }
+    async createCommand(@Req() req: any, @Body() data: any) {
+        const tenantId = await this.getTenantId(req);
         return this.commandsService.create(tenantId, data);
     }
 
     @Patch(':id')
     async updateCommand(@Param('id') id: string, @Body() data: any) {
+        // ideally verify ownership here too 
         return this.commandsService.update(id, data);
     }
 
     @Delete('bulk')
-    async deleteBulk(@Query('tenantId') tenantId: string) {
-        let finalTenantId = tenantId;
-        if (!finalTenantId) {
-            const tenant = await this.prisma.tenant.findFirst();
-            finalTenantId = tenant?.id || 'default';
-        }
-        return this.commandsService.deleteAll(finalTenantId);
+    async deleteBulk(@Req() req: any) {
+        const tenantId = await this.getTenantId(req);
+        return this.commandsService.deleteAll(tenantId);
     }
 
     @Delete(':id')
@@ -54,22 +60,14 @@ export class CommandsController {
     }
 
     @Post('import')
-    async importCommands(@Body() data: { tenantId: string, commands: any[] }) {
-        let tenantId = data.tenantId;
-        if (!tenantId) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tenantId = tenant?.id || 'default';
-        }
+    async importCommands(@Req() req: any, @Body() data: { commands: any[] }) {
+        const tenantId = await this.getTenantId(req);
         return this.commandsService.importBulk(tenantId, data.commands);
     }
 
     @Post('import/external')
-    async importExternal(@Body() data: { tenantId: string, bot: 'nightbot' | 'se', token: string, channelId?: string }) {
-        let tenantId = data.tenantId;
-        if (!tenantId) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tenantId = tenant?.id || 'default';
-        }
+    async importExternal(@Req() req: any, @Body() data: { bot: 'nightbot' | 'se', token: string, channelId?: string }) {
+        const tenantId = await this.getTenantId(req);
 
         let commands = [];
         if (data.bot === 'nightbot') {
@@ -82,12 +80,8 @@ export class CommandsController {
     }
 
     @Post('import/integrated')
-    async importIntegrated(@Body() data: { tenantId: string, bot: 'nightbot' | 'se', seChannelId?: string }) {
-        let tenantId = data.tenantId;
-        if (!tenantId) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tenantId = tenant?.id || 'default';
-        }
+    async importIntegrated(@Req() req: any, @Body() data: { bot: 'nightbot' | 'se', seChannelId?: string }) {
+        const tenantId = await this.getTenantId(req);
 
         const commands = await this.externalBotService.syncIntegrated(tenantId, data.bot, data.seChannelId);
         return this.commandsService.importBulk(tenantId, commands);

@@ -15,8 +15,13 @@ export default function IntegrationsPage() {
     const fetchTenantStatus = async () => {
         try {
             // First, fetch the current user to get their tenant ID
-            const userRes = await fetch('/api/user/me');
-            if (!userRes.ok) throw new Error('Failed to fetch user');
+            const userRes = await fetch('/api/user/me', { credentials: 'include' }).catch(err => null);
+            if (!userRes || !userRes.ok) {
+                console.warn('User fetch failed or unauthorized');
+                setTenant(null);
+                setIsLoading(false);
+                return;
+            }
             const userData = await userRes.json();
 
             if (!userData.tenantId) {

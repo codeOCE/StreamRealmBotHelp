@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Param } from '@nestjs/common';
+import { Controller, Get, Post, Param, UseGuards } from '@nestjs/common';
 import { OnboardingService } from './onboarding.service';
+import { AuthenticatedGuard } from '../auth/authenticated.guard';
 
 @Controller('dashboard/onboarding')
+@UseGuards(AuthenticatedGuard)
 export class OnboardingController {
     constructor(private onboardingService: OnboardingService) { }
 

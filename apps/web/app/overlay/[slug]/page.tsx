@@ -56,8 +56,8 @@ export default function OverlayBrowserSourcePage() {
     useEffect(() => {
         if (!overlay) return;
 
-        // Connect to WebSocket for real-time events
-        const newSocket = io('http://localhost:3001/overlay-events');
+        // Connect to WebSocket via proxied path
+        const newSocket = io('/overlay-events', { path: '/api/socket.io' });
         setSocket(newSocket);
 
         newSocket.on('connect', () => {
@@ -81,7 +81,7 @@ export default function OverlayBrowserSourcePage() {
 
     const fetchOverlay = async () => {
         try {
-            const res = await fetch(`http://localhost:3001/overlays/public/${urlSlug}`);
+            const res = await fetch(`/api/overlays/public/${urlSlug}`);
             const data = await res.json();
             setOverlay(data);
         } catch (error) {

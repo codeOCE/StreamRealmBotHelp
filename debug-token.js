@@ -47,7 +47,7 @@ fetch('https://id.twitch.tv/oauth2/validate', {
                 console.log('\n⚠️  WARNING: Token login does not match GLOBAL_BOT_USERNAME!');
                 console.log(`   .env says: ${botUsername}`);
                 console.log(`   Token is for: ${data.login}`);
-                console.log('\n   Fix: Update GLOBAL_BOT_USERNAME to "${data.login}"');
+                console.log(`\n   Fix: Update GLOBAL_BOT_USERNAME to "${data.login}"`);
             }
         } else {
             console.log('❌ Token validation failed!');

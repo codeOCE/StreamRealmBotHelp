@@ -27,7 +27,8 @@ export default function SentinelPage() {
     const [status, setStatus] = useState<'connected' | 'disconnected'>('disconnected');
 
     useEffect(() => {
-        const socket = io('http://localhost:3001');
+        const API_BASE = '/api/sentinel';
+        const socket = io(API_BASE);
 
         socket.on('connect', () => {
             setStatus('connected');

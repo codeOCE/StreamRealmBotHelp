@@ -1,22 +1,30 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+import { Request, Response } from 'express';
 import session from 'express-session';
 import passport from 'passport';
 
+import { NestExpressApplication } from '@nestjs/platform-express';
+
 async function bootstrap() {
   try {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create<NestExpressApplication>(AppModule);
+    app.set('trust proxy', 1);
+
+
 
     app.use(
       session({
+        name: 'sr_session',
         secret: process.env.SESSION_SECRET || 'super-secret-session-key',
         resave: false,
         saveUninitialized: false,
         cookie: {
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-          secure: false, // Important for localhost (HTTP)
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          secure: false,
           httpOnly: true,
+          path: '/',
         },
       }),
     );

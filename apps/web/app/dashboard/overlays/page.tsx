@@ -35,7 +35,12 @@ export default function OverlaysPage() {
 
             const res = await fetch(`/api/overlays?tenantId=${tenantId}`);
             const data = await res.json();
-            setOverlays(data);
+            if (Array.isArray(data)) {
+                setOverlays(data);
+            } else {
+                console.error('API returned non-array:', data);
+                setOverlays([]);
+            }
         } catch (error) {
             console.error('Failed to fetch overlays:', error);
         } finally {

@@ -60,41 +60,12 @@ export function ImportStepSelect() {
         }
 
         setIsMigrating(true);
-        setStep('migrating');
-        addLog("Starting migration...");
+        addLog("Initializing migration sequence...");
 
-        try {
-            const selectedCommands = state.items.filter((i: any) => state.selectedItems.has(i.command || i._id));
-
-            // Hardcoded tenant ID for now
-            const tenantId = "07c4f588-4b5e-4def-a423-f459491b76b4";
-
-            const res = await fetch("http://localhost:3001/commands/import/process", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    tenantId,
-                    provider: state.provider,
-                    commands: selectedCommands
-                })
-            });
-
-            if (!res.ok) throw new Error("Migration failed");
-
-            const result = await res.json();
-            addLog(`Successfully imported ${result.imported} commands.`);
-            addLog(`Skipped: ${result.skipped}, Failed: ${result.failed}`);
-
-            setStep('complete');
-            toast.success("Migration complete!");
-
-        } catch (error) {
-            console.error(error);
-            addLog(`Error: ${error}`);
-            toast.error("One or more commands failed to migrate.");
-        } finally {
-            setIsMigrating(false);
-        }
+        // Short delay to show the button state
+        setTimeout(() => {
+            setStep('migrating');
+        }, 500);
     };
 
     return (

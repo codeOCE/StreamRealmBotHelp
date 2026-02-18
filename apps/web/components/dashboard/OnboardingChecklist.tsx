@@ -27,9 +27,13 @@ export function OnboardingChecklist() {
 
     const fetchStatus = async () => {
         try {
-            // Hardcoded tenant ID for now
-            const tenantId = "07c4f588-4b5e-4def-a423-f459491b76b4";
-            const res = await fetch(`http://localhost:3001/dashboard/onboarding/${tenantId}`);
+            // Get current user and tenant ID
+            const userRes = await fetch('/api/user/me', { credentials: 'include' });
+            if (!userRes.ok) throw new Error("Failed to fetch user");
+            const userData = await userRes.json();
+            const tenantId = userData.tenantId;
+
+            const res = await fetch(`/api/dashboard/onboarding/${tenantId}`);
             if (res.ok) {
                 const data = await res.json();
                 setStatus(data);

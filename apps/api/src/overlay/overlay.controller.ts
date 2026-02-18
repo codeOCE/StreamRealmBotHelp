@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { OverlayService } from './overlay.service';
 import { OverlayWidgetService } from './overlay-widget.service';
-import { TwitchAuthGuard } from '../auth/twitch-auth.guard';
+import { AuthenticatedGuard } from '../auth/authenticated.guard';
 
 @Controller('overlays')
 export class OverlayController {
@@ -27,13 +27,13 @@ export class OverlayController {
     // ===== Overlay Management =====
 
     @Get()
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async getOverlays(@Query('tenantId') tenantId: string) {
         return this.overlayService.getOverlays(tenantId);
     }
 
     @Post()
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async createOverlay(
         @Query('tenantId') tenantId: string,
         @Body() data: {
@@ -47,7 +47,7 @@ export class OverlayController {
     }
 
     @Get(':id')
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async getOverlay(
         @Param('id') id: string,
         @Query('tenantId') tenantId: string
@@ -56,7 +56,7 @@ export class OverlayController {
     }
 
     @Patch(':id')
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async updateOverlay(
         @Param('id') id: string,
         @Query('tenantId') tenantId: string,
@@ -73,7 +73,7 @@ export class OverlayController {
     }
 
     @Delete(':id')
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async deleteOverlay(
         @Param('id') id: string,
         @Query('tenantId') tenantId: string
@@ -82,7 +82,7 @@ export class OverlayController {
     }
 
     @Get(':id/browser-source-url')
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async getBrowserSourceUrl(
         @Param('id') id: string,
         @Query('tenantId') tenantId: string
@@ -95,7 +95,7 @@ export class OverlayController {
     // ===== Widget Management =====
 
     @Post(':id/widgets')
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async addWidget(
         @Param('id') overlayId: string,
         @Query('tenantId') tenantId: string,
@@ -113,7 +113,7 @@ export class OverlayController {
     }
 
     @Patch('widgets/:widgetId')
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async updateWidget(
         @Param('widgetId') widgetId: string,
         @Query('tenantId') tenantId: string,
@@ -131,7 +131,7 @@ export class OverlayController {
     }
 
     @Delete('widgets/:widgetId')
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async deleteWidget(
         @Param('widgetId') widgetId: string,
         @Query('tenantId') tenantId: string
@@ -140,7 +140,7 @@ export class OverlayController {
     }
 
     @Post(':id/widgets/reorder')
-    @UseGuards(TwitchAuthGuard)
+    @UseGuards(AuthenticatedGuard)
     async reorderWidgets(
         @Param('id') overlayId: string,
         @Query('tenantId') tenantId: string,

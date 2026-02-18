@@ -23,14 +23,21 @@ export default function IntelPage() {
         const fetchAll = async () => {
             try {
                 const [cmdRes, trendRes, loyaltyRes] = await Promise.all([
-                    fetch('http://localhost:3001/analytics/commands?tenantId=default'),
-                    fetch('http://localhost:3001/analytics/trends?tenantId=default'),
-                    fetch('http://localhost:3001/analytics/loyalty?tenantId=default')
+                    fetch('/api/analytics/commands?tenantId=default', { credentials: 'include' }),
+                    fetch('/api/analytics/trends?tenantId=default', { credentials: 'include' }),
+                    fetch('/api/analytics/loyalty?tenantId=default', { credentials: 'include' })
                 ]);
 
-                setCommandStats(await cmdRes.json());
-                setTrends(await trendRes.json());
-                setLoyalty(await loyaltyRes.json());
+                const cmdData = await cmdRes.json();
+                const trendData = await trendRes.json();
+                const loyaltyData = await loyaltyRes.json();
+
+                setCommandStats(Array.isArray(cmdData) ? cmdData : []);
+                setTrends(Array.isArray(trendData) ? trendData : []);
+                // Assuming loyaltyData should be an object (LoyaltySummary) or null,
+                // and not an array. If it's an array (e.g., an error array),
+                // or not an object, we set it to null.
+                setLoyalty(loyaltyData && typeof loyaltyData === 'object' && !Array.isArray(loyaltyData) ? loyaltyData : null);
             } catch (err) {
                 console.error('Failed to fetch analytics', err);
             }

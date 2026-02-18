@@ -25,7 +25,7 @@ export default function LoyaltyPage() {
 
     // Hardcoded for demo/dev as per previous steps
     const USER_ID = '96085876';
-    const API_BASE = 'http://localhost:3001/loyalty';
+    const API_BASE = '/api/loyalty';
 
     const fetchData = async () => {
         try {

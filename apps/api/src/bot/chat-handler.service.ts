@@ -237,11 +237,10 @@ export class ChatHandlerService {
     }
 
     private async logChat(tenantId: string, userstate: tmi.ChatUserstate, message: string) {
-        await (this.prisma as any).chatLog.create({
+        await this.prisma.chatLog.create({
             data: {
                 tenantId,
-                userId: userstate['user-id']!,
-                username: userstate['display-name'] || userstate.username!,
+                viewerId: userstate['user-id']!,
                 message,
             },
         });
@@ -300,11 +299,11 @@ export class ChatHandlerService {
 
             case 'stats':
             case 'xp': {
-                const user = await (this.prisma as any).viewer.findUnique({
+                const user = await this.prisma.viewerProfile.findUnique({
                     where: {
-                        tenantId_twitchId: {
+                        tenantId_twitchUserId: {
                             tenantId,
-                            twitchId: userId
+                            twitchUserId: userId
                         }
                     }
                 });
@@ -319,22 +318,22 @@ export class ChatHandlerService {
 
             case 'top':
             case 'leaderboard': {
-                const topUsers = await (this.prisma as any).viewer.findMany({
+                const topUsers = await this.prisma.viewerProfile.findMany({
                     where: { tenantId },
                     orderBy: { xp: 'desc' },
                     take: 3
                 });
-                const leaderboard = topUsers.map((u: any, idx: number) => `${idx + 1}. ${u.displayName} (${u.xp} XP)`).join(' | ');
+                const leaderboard = topUsers.map((u: any, idx: number) => `${idx + 1}. ${u.username} (${u.xp} XP)`).join(' | ');
                 await this.rateLimiter.enqueueMessage(channelName, `🏆 Top XP Leaders: ${leaderboard}`, broadcasterId, tenant.botUsername || 'global');
                 break;
             }
 
             case 'watchtime': {
-                const user = await (this.prisma as any).viewer.findUnique({
+                const user = await this.prisma.viewerProfile.findUnique({
                     where: {
-                        tenantId_twitchId: {
+                        tenantId_twitchUserId: {
                             tenantId,
-                            twitchId: userId
+                            twitchUserId: userId
                         }
                     }
                 });
@@ -431,7 +430,21 @@ export class ChatHandlerService {
                 }
 
                 try {
-                    const created = this.battleService.createChallenge(username, opponent, tenantId);
+                    // Resolve opponent ID first
+                    const opponentInfo = await this.twitchApiService.getUserInfo(opponent);
+                    if (!opponentInfo) {
+                        await this.rateLimiter.enqueueMessage(
+                            channelName,
+                            `${username}, could not find user ${opponent} on Twitch!`,
+                            broadcasterId,
+                            tenant.botUsername || 'global'
+                        );
+                        break;
+                    }
+                    const opponentId = opponentInfo.id;
+                    const challengerId = userId; // From userstate
+
+                    const created = this.battleService.createChallenge(username, challengerId, opponent, opponentId, tenantId);
                     if (created) {
                         await this.rateLimiter.enqueueMessage(
                             channelName,
@@ -456,7 +469,7 @@ export class ChatHandlerService {
 
             case 'accept': {
                 try {
-                    const result = await this.battleService.acceptChallenge(username, tenantId);
+                    const result = await this.battleService.acceptChallenge(username, userId, tenantId);
                     if (!result) {
                         await this.rateLimiter.enqueueMessage(
                             channelName,

@@ -14,7 +14,7 @@ export function ImportStepMigrating() {
         const executeMigration = async () => {
             try {
                 // Get tenant ID
-                const userRes = await fetch('http://localhost:3001/user/me');
+                const userRes = await fetch('/api/user/me', { credentials: 'include' });
                 if (!userRes.ok) throw new Error("Failed to authenticate for migration");
                 const userData = await userRes.json();
                 const tenantId = userData.tenantId;
@@ -49,7 +49,7 @@ export function ImportStepMigrating() {
                     commands: selectedCommands
                 };
 
-                const res = await fetch('http://localhost:3001/commands/import/process', {
+                const res = await fetch('/api/commands/import/process', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

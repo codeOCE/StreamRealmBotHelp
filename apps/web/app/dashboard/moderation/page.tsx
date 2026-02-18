@@ -23,13 +23,18 @@ export default function ModerationPage() {
     const [selectedRule, setSelectedRule] = useState<ModRule | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const API_BASE = 'http://localhost:3001/moderation';
+    const API_BASE = '/api/moderation';
 
     const fetchRules = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(API_BASE);
-            const data: any[] = await res.json();
+            const res = await fetch(API_BASE, { credentials: 'include' });
+            const data = await res.json();
+
+            if (!Array.isArray(data)) {
+                setRules([]);
+                return;
+            }
 
             const metadata: Record<string, { label: string, description: string }> = {
                 'CAPS': { label: 'Caps Protection', description: 'Prevents excessive use of capital letters in chat.' },
@@ -135,8 +140,8 @@ export default function ModerationPage() {
                                                 key={level}
                                                 onClick={() => updateSettings(rule.id, { ...rule.settings, strictness: level as any })}
                                                 className={`flex-1 py-1.5 rounded-md text-[8px] font-black transition-all border ${rule.settings.strictness === level
-                                                        ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/20'
-                                                        : 'bg-white/[0.02] text-zinc-600 border-white/[0.05] hover:text-zinc-400'
+                                                    ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/20'
+                                                    : 'bg-white/[0.02] text-zinc-600 border-white/[0.05] hover:text-zinc-400'
                                                     }`}
                                             >
                                                 {level}

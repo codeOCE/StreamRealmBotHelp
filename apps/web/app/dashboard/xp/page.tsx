@@ -17,7 +17,7 @@ export default function XPPage() {
     const [settings, setSettings] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const API_BASE = 'http://localhost:3001/loyalty';
+    const API_BASE = '/api/loyalty';
 
     const fetchData = async () => {
         try {

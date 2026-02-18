@@ -3,7 +3,9 @@ import { PrismaService } from '../common/prisma/prisma.service';
 
 interface PendingChallenge {
     challenger: string;
+    challengerId: string;
     opponent: string;
+    opponentId: string;
     tenantId: string;
     timestamp: number;
 }
@@ -23,18 +25,24 @@ export class BattleService {
      * Initiate a battle between two players
      * Returns the battle result with winner and MMR changes
      */
-    async initiateBattle(challengerUsername: string, opponentUsername: string, tenantId: string) {
+    async initiateBattle(
+        challengerUsername: string,
+        challengerId: string,
+        opponentUsername: string,
+        opponentId: string,
+        tenantId: string
+    ) {
         // Get or create both players
         const challenger = await this.prisma.viewerProfile.upsert({
             where: {
                 tenantId_twitchUserId: {
                     tenantId,
-                    twitchUserId: `twitch_${challengerUsername}` // Placeholder, will be replaced with actual ID
+                    twitchUserId: challengerId
                 }
             },
             create: {
                 tenantId,
-                twitchUserId: `twitch_${challengerUsername}`,
+                twitchUserId: challengerId,
                 username: challengerUsername,
                 mmr: 1000
             },
@@ -45,12 +53,12 @@ export class BattleService {
             where: {
                 tenantId_twitchUserId: {
                     tenantId,
-                    twitchUserId: `twitch_${opponentUsername}`
+                    twitchUserId: opponentId
                 }
             },
             create: {
                 tenantId,
-                twitchUserId: `twitch_${opponentUsername}`,
+                twitchUserId: opponentId,
                 username: opponentUsername,
                 mmr: 1000
             },
@@ -212,7 +220,7 @@ export class BattleService {
     /**
      * Create a pending battle challenge
      */
-    createChallenge(challenger: string, opponent: string, tenantId: string): boolean {
+    createChallenge(challenger: string, challengerId: string, opponent: string, opponentId: string, tenantId: string): boolean {
         const key = `${tenantId}:${opponent.toLowerCase()}`;
 
         // Check if opponent already has a pending challenge
@@ -222,7 +230,9 @@ export class BattleService {
 
         this.pendingChallenges.set(key, {
             challenger,
+            challengerId,
             opponent,
+            opponentId,
             tenantId,
             timestamp: Date.now()
         });
@@ -234,12 +244,18 @@ export class BattleService {
     /**
      * Accept a pending challenge and execute the battle
      */
-    async acceptChallenge(username: string, tenantId: string) {
+    async acceptChallenge(username: string, userId: string, tenantId: string) {
         const key = `${tenantId}:${username.toLowerCase()}`;
         const challenge = this.pendingChallenges.get(key);
 
         if (!challenge) {
             return null;
+        }
+
+        // Verify that the acceptor is the intended opponent
+        if (challenge.opponentId !== userId) {
+            this.logger.warn(`Challenge accept mismatch: ${userId} tried to accept for ${challenge.opponentId}`);
+            return null; // Or return a specific error
         }
 
         // Check if challenge has expired
@@ -252,7 +268,13 @@ export class BattleService {
         this.pendingChallenges.delete(key);
 
         try {
-            const result = await this.initiateBattle(challenge.challenger, challenge.opponent, tenantId);
+            const result = await this.initiateBattle(
+                challenge.challenger,
+                challenge.challengerId,
+                challenge.opponent,
+                challenge.opponentId,
+                tenantId
+            );
             return { ...result, expired: false };
         } catch (error) {
             this.logger.error('Failed to execute battle:', error);

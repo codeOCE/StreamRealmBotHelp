@@ -25,12 +25,12 @@ export function ImportStepConnect() {
     const checkConnectionStatus = async () => {
         try {
             // Get tenant ID from user endpoint
-            const userRes = await fetch('http://localhost:3001/user/me');
+            const userRes = await fetch('/api/user/me', { credentials: 'include' });
             const userData = await userRes.json();
             const tenantId = userData.tenantId;
 
             // Check integrations status
-            const res = await fetch(`http://localhost:3001/integrations?tenantId=${tenantId}`);
+            const res = await fetch(`/api/integrations?tenantId=${tenantId}`, { credentials: 'include' });
             const data = await res.json();
 
             // Check if tokens exist in settings
@@ -47,19 +47,19 @@ export function ImportStepConnect() {
 
     const handleDisconnect = async (platform: 'nightbot' | 'streamelements') => {
         try {
-            const userRes = await fetch('http://localhost:3001/user/me');
+            const userRes = await fetch('/api/user/me', { credentials: 'include' });
             const userData = await userRes.json();
             const tenantId = userData.tenantId;
 
             if (platform === 'nightbot') {
-                await fetch(`http://localhost:3001/auth/nightbot/disconnect?tenantId=${tenantId}`, {
+                await fetch(`/api/auth/nightbot/disconnect?tenantId=${tenantId}`, {
                     method: 'POST',
                 });
                 setNightbotConnected(false);
                 toast.success('Nightbot disconnected');
             } else {
                 // For StreamElements, we'll add a disconnect endpoint
-                await fetch(`http://localhost:3001/integrations/streamelements/disconnect?tenantId=${tenantId}`, {
+                await fetch(`/api/integrations/streamelements/disconnect?tenantId=${tenantId}`, {
                     method: 'POST',
                 });
                 setSeConnected(false);
@@ -74,7 +74,7 @@ export function ImportStepConnect() {
     const handleNightbotOAuth = async () => {
         try {
             // Get tenant ID
-            const userRes = await fetch('http://localhost:3001/user/me');
+            const userRes = await fetch('/api/user/me', { credentials: 'include' });
             const userData = await userRes.json();
             const tenantId = userData.tenantId;
 
@@ -85,7 +85,7 @@ export function ImportStepConnect() {
             const top = window.screenY + (window.outerHeight - height) / 2;
 
             const popup = window.open(
-                `http://localhost:3001/auth/nightbot?tenantId=${tenantId}`,
+                `${window.location.origin}/api/auth/nightbot?tenantId=${tenantId}`,
                 'Nightbot OAuth',
                 `width=${width},height=${height},left=${left},top=${top}`
             );
@@ -107,7 +107,7 @@ export function ImportStepConnect() {
 
     const checkNightbotConnection = async (tenantId: string) => {
         try {
-            const res = await fetch(`http://localhost:3001/integrations?tenantId=${tenantId}`);
+            const res = await fetch(`/api/integrations?tenantId=${tenantId}`, { credentials: 'include' });
             const data = await res.json();
 
             // Check if Nightbot is connected
@@ -128,11 +128,11 @@ export function ImportStepConnect() {
         setIsLoading(true);
         try {
             // Get tenant ID
-            const userRes = await fetch('http://localhost:3001/user/me');
+            const userRes = await fetch('/api/user/me', { credentials: 'include' });
             const userData = await userRes.json();
             const tenantId = userData.tenantId;
 
-            const res = await fetch('http://localhost:3001/integrations/streamelements/connect', {
+            const res = await fetch('/api/integrations/streamelements/connect', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ tenantId, jwtToken: token }),
@@ -158,13 +158,13 @@ export function ImportStepConnect() {
         setIsLoading(true);
         try {
             // Get tenant ID
-            const userRes = await fetch('http://localhost:3001/user/me');
+            const userRes = await fetch('/api/user/me', { credentials: 'include' });
             const userData = await userRes.json();
             const tenantId = userData.tenantId;
 
             const endpoint = selectedType === 'nightbot'
-                ? `http://localhost:3001/integrations/nightbot/import?tenantId=${tenantId}`
-                : `http://localhost:3001/integrations/streamelements/import?tenantId=${tenantId}`;
+                ? `/api/integrations/nightbot/import?tenantId=${tenantId}`
+                : `/api/integrations/streamelements/import?tenantId=${tenantId}`;
 
             const res = await fetch(endpoint);
             const data = await res.json();

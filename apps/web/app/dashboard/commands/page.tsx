@@ -29,22 +29,23 @@ export default function CommandsPage() {
     const [editingCommand, setEditingCommand] = useState<Command | undefined>(undefined);
     const [activeCategory, setActiveCategory] = useState<'custom' | 'built-in'>('custom');
 
-    const API_BASE = 'http://localhost:3001/commands';
-    const SOCKET_URL = 'http://localhost:3001';
+    const API_BASE = '/api/commands';
+    const SOCKET_URL = '/';
 
     const fetchCommands = async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(API_BASE);
+            const res = await fetch(API_BASE, { credentials: 'include' });
             const data = await res.json();
+
             if (Array.isArray(data)) {
                 setCommands(data);
             } else {
                 console.error('API did not return an array:', data);
                 setCommands([]);
             }
-        } catch (err) {
-            console.error('Failed to fetch commands', err);
+        } catch (error) {
+            console.error('Failed to fetch commands', error);
             setCommands([]);
         } finally {
             setIsLoading(false);
@@ -54,8 +55,8 @@ export default function CommandsPage() {
     useEffect(() => {
         fetchCommands();
 
-        // Socket.io initialization
-        const socket = io(SOCKET_URL);
+        // Socket.io initialization via proxied path
+        const socket = io(SOCKET_URL, { path: '/api/socket.io' });
 
         socket.on('connect', () => {
             console.log('Connected to WebSocket server');

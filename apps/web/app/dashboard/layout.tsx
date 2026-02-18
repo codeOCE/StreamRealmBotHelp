@@ -11,9 +11,23 @@ export default function DashboardLayout({
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        fetch('/api/user/me')
-            .then(res => res.json())
-            .then(data => setUser(data))
+        const urlParams = new URLSearchParams(window.location.search);
+        const justConnected = urlParams.get('connected') === 'true';
+
+        fetch('/api/user/me', { credentials: 'include' })
+            .then(res => {
+                if (res.ok) return res.json();
+                if (res.status === 401 && !justConnected) {
+                    // Not logged in, redirect to login via proxied path
+                    // Only redirect if we didn't JUST come back from a successful auth
+                    window.location.href = '/auth/twitch';
+                    return null;
+                }
+                return null;
+            })
+            .then(data => {
+                if (data) setUser(data);
+            })
             .catch(err => console.error('Failed to fetch user:', err));
     }, []);
 

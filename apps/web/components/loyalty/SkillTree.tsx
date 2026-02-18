@@ -119,9 +119,10 @@ const SkillTree: React.FC<SkillTreeProps> = ({ tenantId, userId, currentSkillPoi
         }
 
         try {
-            const res = await fetch('http://localhost:3001/loyalty/skills/unlock', {
+            const res = await fetch('/api/loyalty/skills/unlock', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     tenantId,
                     twitchUserId: userId,
@@ -181,13 +182,13 @@ const SkillTree: React.FC<SkillTreeProps> = ({ tenantId, userId, currentSkillPoi
                                 <Button
                                     onClick={handleUnlock}
                                     className="w-full bg-indigo-600 hover:bg-indigo-700"
-                                    disabled={!selectedSkill.parentId || !unlockedSkillIds.has(selectedSkill.parentId)}
+                                    disabled={selectedSkill.parentId !== null && !unlockedSkillIds.has(selectedSkill.parentId)}
                                 >
                                     Unlock Skill
                                 </Button>
                             )}
 
-                            {selectedSkill.parentId && !unlockedSkillIds.has(selectedSkill.parentId) && (
+                            {selectedSkill.parentId !== null && !unlockedSkillIds.has(selectedSkill.parentId) && (
                                 <p className="text-xs text-red-400 text-center">Requires previous skill</p>
                             )}
                         </CardContent>

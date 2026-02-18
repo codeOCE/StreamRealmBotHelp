@@ -8,14 +8,13 @@ export class OnboardingService {
     constructor(private prisma: PrismaService) { }
 
     async getStatus(tenantId: string) {
-        // Use 'any' cast until Prisma Client is regenerated
-        let status = await (this.prisma as any).onboarding.findUnique({
+        let status = await this.prisma.onboarding.findUnique({
             where: { tenantId },
             include: { tenant: true } // Include tenant for checks
         });
 
         if (!status) {
-            status = await (this.prisma as any).onboarding.create({
+            status = await this.prisma.onboarding.create({
                 data: { tenantId },
                 include: { tenant: true }
             });
@@ -25,7 +24,7 @@ export class OnboardingService {
         const updates: any = {};
 
         // 1. Check Linked Bot
-        if (!status.hasLinkedBot && status.tenant?.botAccessToken) {
+        if (!status.hasLinkedBot && status.tenant?.isConnected) {
             updates.hasLinkedBot = true;
         }
 
@@ -47,7 +46,7 @@ export class OnboardingService {
 
         // Apply updates if any
         if (Object.keys(updates).length > 0) {
-            status = await (this.prisma as any).onboarding.update({
+            status = await this.prisma.onboarding.update({
                 where: { tenantId },
                 data: updates,
                 include: { tenant: true }
@@ -82,7 +81,7 @@ export class OnboardingService {
         }
 
         if (Object.keys(updateData).length > 0) {
-            await (this.prisma as any).onboarding.update({
+            await this.prisma.onboarding.update({
                 where: { tenantId },
                 data: updateData
             });

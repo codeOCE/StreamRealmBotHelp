@@ -33,7 +33,7 @@ export function CommandTester() {
             // Hardcoded tenant ID for now
             const tenantId = "07c4f588-4b5e-4def-a423-f459491b76b4";
 
-            const res = await fetch("http://localhost:3001/commands/test", {
+            const res = await fetch("/api/commands/test", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
