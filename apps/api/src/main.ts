@@ -32,6 +32,14 @@ async function bootstrap() {
     app.use(passport.initialize());
     app.use(passport.session());
 
+    // Debug Middleware
+    app.use((req: Request, res: Response, next: Function) => {
+      if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
+        console.log(`[${req.method}] ${req.path} | SessionID: ${req.sessionID} | User: ${req.user ? (req.user as any).username : 'Guest'} | Cookies: ${Object.keys(req.cookies || {}).join(', ')}`);
+      }
+      next();
+    });
+
     app.enableCors({
       origin: process.env.FRONTEND_URL || 'http://localhost:3002',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
