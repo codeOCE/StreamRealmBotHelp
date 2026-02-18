@@ -32,7 +32,7 @@ async function bootstrap() {
     app.use(passport.session());
 
     app.enableCors({
-      origin: true,
+      origin: process.env.FRONTEND_URL || 'http://localhost:3002',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       credentials: true,
     });
