@@ -50,14 +50,14 @@ export class AuthService {
                     name: username,
                     isConnected: true,
                     targetChannel: username, // Default target is the owner's channel
-                } as any,
+                },
                 create: {
                     ownerId: user.id,
                     twitchId,
                     name: username,
                     isConnected: true,
                     targetChannel: username,
-                } as any,
+                },
             });
 
             // Seed default commands if none exist for this tenant
@@ -139,9 +139,9 @@ export class AuthService {
             where: { twitchId: ownerTwitchId },
             data: {
                 botUsername,
-                botAccessToken: encryptedAccessToken,
-                botRefreshToken: encryptedRefreshToken,
-            } as any,
+                encryptedBotAccessToken: encryptedAccessToken,
+                encryptedBotRefreshToken: encryptedRefreshToken,
+            },
         });
 
         // Trigger bot to join the target channel with its NEW identity
