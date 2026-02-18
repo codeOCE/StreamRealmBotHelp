@@ -167,7 +167,7 @@ export default function IntelPage() {
                     <button className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest transition-colors">Full Roster →</button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    {loyalty?.topViewers.map((user, idx) => (
+                    {(loyalty?.topViewers || []).map((user, idx) => (
                         <div key={user.username} className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-all group">
                             <div className="flex items-center justify-between mb-3">
                                 <div className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-yellow-500' : idx === 1 ? 'bg-zinc-300' : idx === 2 ? 'bg-orange-700' : 'bg-brand-primary/40'}`} />

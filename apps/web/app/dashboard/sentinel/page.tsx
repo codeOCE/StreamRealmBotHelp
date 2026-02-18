@@ -46,7 +46,10 @@ export default function SentinelPage() {
 
         // Initial fetch
         fetch('/api/audit?tenantId=default', { credentials: 'include' })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                return res.json();
+            })
             .then(data => setLogs(data))
             .catch(err => console.error('Failed to fetch logs', err));
 
