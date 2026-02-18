@@ -1,15 +1,19 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, Logger, Res, BadRequestException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, Logger, Res, BadRequestException, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
 import type { Response } from 'express';
 import { IntegrationsService } from './integrations.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { BotManagerService } from './bot-manager.service';
 import { VariableParserService } from './variable-parser.service';
 import { SecurityService } from '../common/security/security.service';
-import { TwitchAuthGuard } from '../auth/twitch-auth.guard';
+import { AuthenticatedGuard } from '../auth/authenticated.guard';
+import * as crypto from 'crypto';
 
 @Controller('integrations')
+@UseGuards(AuthenticatedGuard)
 export class IntegrationsController {
     private readonly logger = new Logger(IntegrationsController.name);
+    private readonly STATE_SECRET = process.env.STATE_SECRET || 'default-secret-change-in-production';
+    private readonly STATE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
     constructor(
         private integrationsService: IntegrationsService,
@@ -19,51 +23,103 @@ export class IntegrationsController {
         private security: SecurityService,
     ) { }
 
-    @Get()
-    async getIntegrations(@Query('tenantId') tenantId: string) {
-        if (!tenantId) {
-            throw new BadRequestException('tenantId query parameter is required');
+    private async getTenantId(request: any): Promise<string> {
+        const user = request.user;
+        if (!user) {
+            throw new UnauthorizedException('User not authenticated');
         }
+
+        const tenant = await this.prisma.tenant.findFirst({
+            where: { ownerId: user.id }
+        });
+
+        if (!tenant) {
+            throw new UnauthorizedException('No tenant found for user');
+        }
+        return tenant.id;
+    }
+
+    /**
+     * Generate HMAC-signed state to prevent forgery
+     */
+    private createSignedState(tenantId: string): string {
+        const timestamp = Date.now();
+        const payload = JSON.stringify({ tenantId, ts: timestamp });
+        const hmac = crypto.createHmac('sha256', this.STATE_SECRET);
+        hmac.update(payload);
+        const signature = hmac.digest('hex');
+
+        // Return base64(payload + signature)
+        const signedState = Buffer.from(JSON.stringify({ payload, signature })).toString('base64');
+        return signedState;
+    }
+
+    /**
+     * Verify HMAC-signed state and extract tenantId
+     */
+    private verifySignedState(state: string): { tenantId: string } {
+        try {
+            const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+            const { payload, signature } = decoded;
+
+            // Verify HMAC signature
+            const hmac = crypto.createHmac('sha256', this.STATE_SECRET);
+            hmac.update(payload);
+            const expectedSignature = hmac.digest('hex');
+
+            if (signature !== expectedSignature) {
+                throw new UnauthorizedException('Invalid state signature');
+            }
+
+            // Parse payload and check expiry
+            const { tenantId, ts } = JSON.parse(payload);
+            const age = Date.now() - ts;
+
+            if (age > this.STATE_EXPIRY_MS) {
+                throw new UnauthorizedException('State expired');
+            }
+
+            return { tenantId };
+        } catch (error) {
+            this.logger.error('State verification failed:', error);
+            throw new UnauthorizedException('Invalid or expired state');
+        }
+    }
+
+    @Get()
+    async getIntegrations(@Req() req: any) {
+        const tenantId = await this.getTenantId(req);
         return this.integrationsService.getIntegrations(tenantId);
     }
 
     @Post('link/:provider')
     async linkIntegration(
+        @Req() req: any,
         @Param('provider') provider: string,
-        @Body() data: { tenantId: string, accessToken: string, refreshToken?: string, expiresIn?: number, metadata?: any }
+        @Body() data: { accessToken: string, refreshToken?: string, expiresIn?: number, metadata?: any }
     ) {
-        let tid = data.tenantId;
-        if (!tid) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tid = tenant?.id || 'default';
-        }
-        return this.integrationsService.saveIntegration(tid, provider, data);
+        const tenantId = await this.getTenantId(req);
+        return this.integrationsService.saveIntegration(tenantId, provider, data);
     }
 
     @Delete(':provider')
-    @UseGuards(TwitchAuthGuard)
     async unlinkIntegration(
-        @Param('provider') provider: string,
-        @Query('tenantId') tenantId: string
+        @Req() req: any,
+        @Param('provider') provider: string
     ) {
-        let tid = tenantId;
-        if (!tid) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tid = tenant?.id || 'default';
-        }
-        return this.integrationsService.unlinkIntegration(tid, provider);
+        const tenantId = await this.getTenantId(req);
+        return this.integrationsService.unlinkIntegration(tenantId, provider);
     }
 
     @Get('authorize/:provider')
-    async authorize(@Param('provider') provider: string, @Query('tenantId') tenantId: string, @Res() res: Response) {
-        let tid = tenantId;
-        if (!tid || tid === 'default') {
-            const tenant = await this.prisma.tenant.findFirst();
-            tid = tenant?.id || 'default';
-        }
+    async authorize(@Req() req: any, @Param('provider') provider: string, @Res() res: Response) {
+        const tenantId = await this.getTenantId(req);
 
-        const state = tid;
-        const redirectUri = `http://localhost:3001/integrations/callback/${provider}`;
+        const state = this.createSignedState(tenantId);
+
+        const apiUrl = process.env.API_URL || 'http://localhost:3001';
+        const redirectUri = `${apiUrl}/integrations/callback/${provider}`;
+
         const url = this.integrationsService.getAuthorizeUrl(provider, redirectUri, state);
 
         this.logger.log(`Redirecting to ${provider} OAuth: ${url}`);
@@ -77,37 +133,33 @@ export class IntegrationsController {
         @Query('state') state: string,
         @Res() res: Response
     ) {
-        let tenantId = state;
-        if (!tenantId || tenantId === 'default') {
-            const tenant = await this.prisma.tenant.findFirst();
-            tenantId = tenant?.id || 'default';
-        }
+        // Verify signed state
+        const { tenantId } = this.verifySignedState(state);
 
-        const redirectUri = `http://localhost:3001/integrations/callback/${provider}`;
+        const apiUrl = process.env.API_URL || 'http://localhost:3001';
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+        const redirectUri = `${apiUrl}/integrations/callback/${provider}`;
 
         try {
             await this.integrationsService.exchangeCodeForTokens(tenantId, provider, code, redirectUri);
-            return res.redirect('http://localhost:3002/dashboard/integrations?success=true');
+            return res.redirect(`${frontendUrl}/dashboard/integrations?success=true`);
         } catch (err) {
             this.logger.error(`OAuth callback failed for ${provider}`, err);
-            return res.redirect(`http://localhost:3002/dashboard/integrations?error=${encodeURIComponent(err.message)}`);
+            return res.redirect(`${frontendUrl}/dashboard/integrations?error=${encodeURIComponent(err.message)}`);
         }
     }
 
     // Bot Presence Management
     @Post('bot/join')
-    @UseGuards(TwitchAuthGuard)
-    async joinBot(@Body() data: { tenantId: string }) {
-        if (!data.tenantId) {
-            throw new BadRequestException('tenantId is required in request body');
-        }
+    async joinBot(@Req() req: any) {
+        const tenantId = await this.getTenantId(req);
 
-        const tenant = await this.prisma.tenant.findUnique({ where: { id: data.tenantId } });
+        const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
         if (!tenant) throw new Error('Tenant not found');
 
         // Mark tenant as connected (using global bot from .env)
         await this.prisma.tenant.update({
-            where: { id: data.tenantId },
+            where: { id: tenantId },
             data: { isConnected: true }
         });
 
@@ -121,15 +173,10 @@ export class IntegrationsController {
     }
 
     @Post('bot/leave')
-    @UseGuards(TwitchAuthGuard)
-    async leaveBot(@Body() data: { tenantId: string }) {
-        let tid = data.tenantId;
-        if (!tid) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tid = tenant?.id || 'default';
-        }
+    async leaveBot(@Req() req: any) {
+        const tenantId = await this.getTenantId(req);
 
-        const tenant = await this.prisma.tenant.findUnique({ where: { id: tid } });
+        const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
         if (tenant) {
             // Tell the bot to leave before updating DB or just after
             const channel = tenant.targetChannel || tenant.name;
@@ -139,7 +186,7 @@ export class IntegrationsController {
         }
 
         await this.prisma.tenant.update({
-            where: { id: tid },
+            where: { id: tenantId },
             data: { isConnected: false }
         });
 
@@ -147,14 +194,10 @@ export class IntegrationsController {
     }
 
     @Post('bot/unlink')
-    async unlinkBot(@Body() data: { tenantId: string }) {
-        let tid = data.tenantId;
-        if (!tid) {
-            const tenant = await this.prisma.tenant.findFirst();
-            tid = tenant?.id || 'default';
-        }
+    async unlinkBot(@Req() req: any) {
+        const tenantId = await this.getTenantId(req);
 
-        const tenant = await this.prisma.tenant.findUnique({ where: { id: tid } });
+        const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
         if (tenant) {
             const channel = tenant.targetChannel || tenant.name;
             if (channel) {
@@ -163,7 +206,7 @@ export class IntegrationsController {
         }
 
         await this.prisma.tenant.update({
-            where: { id: tid },
+            where: { id: tenantId },
             data: {
                 isConnected: false,
                 encryptedBotAccessToken: null,
@@ -177,16 +220,12 @@ export class IntegrationsController {
     }
 
     @Get('nightbot/import')
-    async importFromNightbot(@Query('tenantId') tenantId: string) {
+    async importFromNightbot(@Req() req: any) {
         try {
-            let tid = tenantId;
-            if (!tid) {
-                const tenant = await this.prisma.tenant.findFirst();
-                tid = tenant?.id || 'default';
-            }
+            const tenantId = await this.getTenantId(req);
 
             // Get Nightbot access token from tenant settings
-            const tenant = await this.prisma.tenant.findUnique({ where: { id: tid } });
+            const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
             const settings = (tenant?.settings as any) || {};
 
             if (!settings.nightbot?.accessToken) {
@@ -227,18 +266,17 @@ export class IntegrationsController {
             return { commands: convertedCommands };
         } catch (error) {
             this.logger.error('Nightbot import error:', error);
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
             return { error: 'Failed to import from Nightbot' };
         }
     }
 
     @Post('streamelements/connect')
-    async connectStreamElements(@Body() data: { tenantId: string, jwtToken: string }) {
+    async connectStreamElements(@Req() req: any, @Body() data: { jwtToken: string }) {
         try {
-            let tid = data.tenantId;
-            if (!tid) {
-                const tenant = await this.prisma.tenant.findFirst();
-                tid = tenant?.id || 'default';
-            }
+            const tenantId = await this.getTenantId(req);
 
             // Verify JWT token by making a test request
             const response = await fetch('https://api.streamelements.com/kappa/v2/channels/me', {
@@ -257,7 +295,7 @@ export class IntegrationsController {
             // Encrypt and store JWT
             const encryptedToken = this.security.encrypt(data.jwtToken);
 
-            const tenant = await this.prisma.tenant.findUnique({ where: { id: tid } });
+            const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
             const settings = (tenant?.settings as any) || {};
             settings.streamelements = {
                 jwtToken: encryptedToken,
@@ -266,29 +304,28 @@ export class IntegrationsController {
             };
 
             await this.prisma.tenant.update({
-                where: { id: tid },
+                where: { id: tenantId },
                 data: { settings },
             });
 
-            this.logger.log(`StreamElements connected for tenant ${tid}`);
+            this.logger.log(`StreamElements connected for tenant ${tenantId}`);
             return { success: true, channelId };
         } catch (error) {
             this.logger.error('StreamElements connect error:', error);
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
             return { error: 'Failed to connect StreamElements' };
         }
     }
 
     @Get('streamelements/import')
-    async importFromStreamElements(@Query('tenantId') tenantId: string) {
+    async importFromStreamElements(@Req() req: any) {
         try {
-            let tid = tenantId;
-            if (!tid) {
-                const tenant = await this.prisma.tenant.findFirst();
-                tid = tenant?.id || 'default';
-            }
+            const tenantId = await this.getTenantId(req);
 
             // Get StreamElements JWT from tenant settings
-            const tenant = await this.prisma.tenant.findUnique({ where: { id: tid } });
+            const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
             const settings = (tenant?.settings as any) || {};
 
             if (!settings.streamelements?.jwtToken) {
@@ -329,13 +366,18 @@ export class IntegrationsController {
             return { commands: convertedCommands };
         } catch (error) {
             this.logger.error('StreamElements import error:', error);
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
             return { error: 'Failed to import from StreamElements' };
         }
     }
 
     @Post('streamelements/disconnect')
-    async disconnectStreamElements(@Query('tenantId') tenantId: string) {
+    async disconnectStreamElements(@Req() req: any) {
         try {
+            const tenantId = await this.getTenantId(req);
+
             const tenant = await this.prisma.tenant.findUnique({
                 where: { id: tenantId },
             });
@@ -359,6 +401,9 @@ export class IntegrationsController {
             return { success: true, message: 'StreamElements disconnected' };
         } catch (error) {
             this.logger.error('StreamElements disconnect error:', error);
+            if (error instanceof UnauthorizedException) {
+                throw error;
+            }
             return { error: 'Failed to disconnect StreamElements' };
         }
     }
