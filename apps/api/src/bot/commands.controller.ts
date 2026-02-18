@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Req, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { CommandsService } from './commands.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ExternalBotService } from './external-bot.service';
@@ -73,7 +73,10 @@ export class CommandsController {
         if (data.bot === 'nightbot') {
             commands = await this.externalBotService.fetchNightbotCommands(data.token);
         } else if (data.bot === 'se') {
-            commands = await this.externalBotService.fetchSECommands(data.channelId!, data.token);
+            if (!data.channelId) {
+                throw new BadRequestException('channelId is required for se bot');
+            }
+            commands = await this.externalBotService.fetchSECommands(data.channelId, data.token);
         }
 
         return this.commandsService.importBulk(tenantId, commands);
