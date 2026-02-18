@@ -44,13 +44,15 @@ export class TwitchApiService {
         }
     }
 
-    private async getAppToken() {
-        if (this.accessToken && Date.now() < this.expiresAt) {
+    private async getAppToken(forceRefresh = false) {
+        if (!forceRefresh && this.accessToken && Date.now() < this.expiresAt) {
             return this.accessToken;
         }
 
         const clientId = this.configService.get<string>('TWITCH_CLIENT_ID');
         const clientSecret = this.configService.get<string>('TWITCH_CLIENT_SECRET');
+
+        this.logger.log('Fetching new Twitch App Access Token...');
 
         try {
             const response = await fetch(`https://id.twitch.tv/oauth2/token?client_id=${clientId}&client_secret=${clientSecret}&grant_type=client_credentials`, {
@@ -58,12 +60,15 @@ export class TwitchApiService {
             });
 
             if (!response.ok) {
-                throw new Error(`Failed to get app token: ${response.statusText}`);
+                const errorText = await response.text();
+                throw new Error(`Failed to get app token: ${response.status} ${response.statusText} - ${errorText}`);
             }
 
             const data = await response.json() as any;
             this.accessToken = data.access_token;
-            this.expiresAt = Date.now() + (data.expires_in - 60) * 1000;
+            // Buffer of 5 minutes (300 seconds) to prevent edge-case expiry
+            this.expiresAt = Date.now() + (data.expires_in - 300) * 1000;
+            this.logger.log(`Generated new App Access Token. Expires in ${data.expires_in}s`);
             return this.accessToken;
         } catch (err) {
             this.logger.error('Error fetching Twitch App Token', err);
