@@ -1,0 +1,5 @@
+---------------------------------------------------
+Found 2 custom commands.
+---------------------------------------------------
+[codeoce (96085876)] !hello -> ["Hello @{user}! Welcome to the stream!"] (UserLevel: VIEWER)
+[codeoce (96085876)] !rules -> ["Keep it friendly and respectful. No spamming or self-promo!"] (UserLevel: VIEWER)

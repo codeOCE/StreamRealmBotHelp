@@ -73,10 +73,18 @@ export class ChatHandlerService {
         if (message.startsWith('!')) {
             this.logger.log(`[MSG] Potential command detected: ${message}`);
             try {
-                await this.handleCommand(tenant, message, userstate, channelName);
+                const handled = await this.handleCommand(tenant, message, userstate, channelName);
+                if (handled) return; // Stop if standard command executed
             } catch (err) {
                 this.logger.error(`[MSG] Command execution failed for ${message}`, err);
             }
+        }
+
+        // 3. Regex Command Check
+        try {
+            await this.handleRegexCommands(tenant, message, userstate, channelName);
+        } catch (err) {
+            this.logger.error(`[MSG] Regex command execution failed`, err);
         }
 
         // 3. XP Tracking & Achievements (Non-blocking)
@@ -99,7 +107,7 @@ export class ChatHandlerService {
             .catch(err => this.logger.error(`[MSG] Chat logging failed`, err));
     }
 
-    private async handleCommand(tenant: any, message: string, userstate: tmi.ChatUserstate, channelName: string) {
+    private async handleCommand(tenant: any, message: string, userstate: tmi.ChatUserstate, channelName: string): Promise<boolean> {
         const tenantId = tenant.id;
         const broadcasterId = tenant.twitchId; // FIX: Define this early
         const botUsername = tenant.botUsername || 'global'; // FIX: Define this early
@@ -113,7 +121,7 @@ export class ChatHandlerService {
         const handled = await this.handleBuiltInCommand(trigger, args, userstate, channelName, tenant);
         if (handled) {
             this.logger.log(`[CMD] Handled by built-in logic.`);
-            return;
+            return true;
         }
 
         // 2b. Custom Command Find by trigger OR alias
@@ -139,7 +147,7 @@ export class ChatHandlerService {
             const cooldownKey = `${tenantId}:${command.id}`;
             const lastUsed = this.cooldowns.get(cooldownKey) || 0;
             const now = Date.now();
-            if (now - lastUsed < command.cooldown * 1000) return;
+            if (now - lastUsed < command.cooldown * 1000) return true; // Cooldown hit, but we consider it "matched" so we return true to stop regex? Or false? Usually true to prevent spam.
 
             if (this.hasPermission(userstate, command.userLevel)) {
                 // Increment usages
@@ -211,6 +219,107 @@ export class ChatHandlerService {
 
                 this.cooldowns.set(cooldownKey, now);
                 this.logger.log(`[CMD] Executed: !${trigger} (Usage: ${command.usages + 1})`);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private async handleRegexCommands(tenant: any, message: string, userstate: tmi.ChatUserstate, channelName: string) {
+        const tenantId = tenant.id;
+        // Fetch all regex commands for this tenant
+        const regexCommands = await (this.prisma.command as any).findMany({
+            where: {
+                tenantId,
+                enabled: true,
+                isRegex: true
+            }
+        });
+
+        for (const cmd of regexCommands) {
+            try {
+                const regex = new RegExp(cmd.trigger, 'i'); // Case insensitive default?
+                const match = message.match(regex);
+
+                if (match) {
+                    this.logger.log(`[REGEX] Matched: "${cmd.trigger}" in "${message}"`);
+
+                    // Cooldown Check
+                    // We need a unique key for regex commands too
+                    const cooldownKey = `${tenantId}:${cmd.id}`;
+                    const lastUsed = this.cooldowns.get(cooldownKey) || 0;
+                    const now = Date.now();
+                    const globalCooldown = cmd.cooldown || 0;
+                    const userCooldown = cmd.userCooldown || 0;
+
+                    // Global Cooldown
+                    if (now - lastUsed < globalCooldown * 1000) continue;
+
+                    // User Cooldown (Need to track per user)
+                    // Simple memory map: tenant:cmd:userId -> timestamp
+                    // We can reuse the same map but keys need to be robust
+                    const userCooldownKey = `${tenantId}:${cmd.id}:${userstate['user-id']}`;
+                    const lastUsedUser = this.cooldowns.get(userCooldownKey) || 0;
+                    if (now - lastUsedUser < userCooldown * 1000) continue;
+
+                    if (this.hasPermission(userstate, cmd.userLevel)) {
+                        // Increment usage
+                        await this.prisma.command.update({
+                            where: { id: cmd.id },
+                            data: { usages: { increment: 1 } }
+                        });
+
+                        const resData = (cmd as any).responses;
+                        let responses: string[] = [];
+                        if (Array.isArray(resData)) {
+                            responses = resData;
+                        } else if (typeof resData === 'string') {
+                            responses = [resData];
+                        }
+
+                        // Map capture groups to args
+                        // args[0] in variable service is usually first word after command
+                        // For regex, let's map capture groups 1..N to args[0]..args[N-1]
+                        // match[0] is full match. match[1] is first group.
+                        const args = match.slice(1);
+
+                        const context = {
+                            user: userstate['display-name'] || userstate.username!,
+                            userId: userstate['user-id']!,
+                            channel: channelName,
+                            broadcasterId: tenant.twitchId,
+                            count: cmd.usages + 1,
+                            args,
+                            msgId: userstate.id
+                        };
+
+                        const responseType = (cmd as any).responseType || 'SAY';
+
+                        for (const response of responses) {
+                            if (response.trim()) {
+                                const parsedMessage = await this.variableService.parse(response, context);
+
+                                switch (responseType) {
+                                    case 'MENTION':
+                                        await this.rateLimiter.enqueueMessage(channelName, `@${context.user}, ${parsedMessage}`, tenant.twitchId, tenant.botUsername || 'global');
+                                        break;
+                                    case 'REPLY':
+                                        await this.rateLimiter.enqueueMessage(channelName, parsedMessage, tenant.twitchId, tenant.botUsername || 'global', context.msgId);
+                                        break;
+                                    default:
+                                        await this.rateLimiter.enqueueMessage(channelName, parsedMessage, tenant.twitchId, tenant.botUsername || 'global');
+                                        break;
+                                }
+                            }
+                        }
+
+                        // Set Cooldowns
+                        this.cooldowns.set(cooldownKey, now);
+                        this.cooldowns.set(userCooldownKey, now);
+                    }
+                }
+            } catch (err) {
+                this.logger.error(`[REGEX] Error processing regex "${cmd.trigger}"`, err);
             }
         }
     }
@@ -277,9 +386,9 @@ export class ChatHandlerService {
                     const diff = now.getTime() - startedAt.getTime();
                     const hours = Math.floor(diff / (1000 * 60 * 60));
                     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    await this.rateLimiter.enqueueMessage(channelName, `🎮 Stream has been live for ${hours}h ${minutes}m`, broadcasterId, tenant.botUsername || 'global');
+                    await this.rateLimiter.enqueueMessage(channelName, `Stream has been live for ${hours}h ${minutes}m`, broadcasterId, tenant.botUsername || 'global');
                 } else {
-                    await this.rateLimiter.enqueueMessage(channelName, '🔴 Stream is currently offline.', broadcasterId, tenant.botUsername || 'global');
+                    await this.rateLimiter.enqueueMessage(channelName, 'Stream is currently offline.', broadcasterId, tenant.botUsername || 'global');
                 }
                 break;
             }
@@ -289,9 +398,9 @@ export class ChatHandlerService {
                 const info = await this.twitchApiService.getChannelInfo(broadcasterId);
                 if (info) {
                     if (trigger === 'game') {
-                        await this.rateLimiter.enqueueMessage(channelName, `🎮 Current game: ${info.game_name || 'Unknown'}`, broadcasterId, tenant.botUsername || 'global');
+                        await this.rateLimiter.enqueueMessage(channelName, `Current game: ${info.game_name || 'Unknown'}`, broadcasterId, tenant.botUsername || 'global');
                     } else {
-                        await this.rateLimiter.enqueueMessage(channelName, `📺 Current title: ${info.title}`, broadcasterId, tenant.botUsername || 'global');
+                        await this.rateLimiter.enqueueMessage(channelName, `Current title: ${info.title}`, broadcasterId, tenant.botUsername || 'global');
                     }
                 }
                 break;
@@ -324,7 +433,7 @@ export class ChatHandlerService {
                     take: 3
                 });
                 const leaderboard = topUsers.map((u: any, idx: number) => `${idx + 1}. ${u.username} (${u.xp} XP)`).join(' | ');
-                await this.rateLimiter.enqueueMessage(channelName, `🏆 Top XP Leaders: ${leaderboard}`, broadcasterId, tenant.botUsername || 'global');
+                await this.rateLimiter.enqueueMessage(channelName, `Top XP Leaders: ${leaderboard}`, broadcasterId, tenant.botUsername || 'global');
                 break;
             }
 
@@ -378,12 +487,12 @@ export class ChatHandlerService {
 
             case 'socials': {
                 // Fetch from tenant settings
-                await this.rateLimiter.enqueueMessage(channelName, `Follow us on our socials! 🌐 [Add your social links in the dashboard]`, broadcasterId, tenant.botUsername || 'global');
+                await this.rateLimiter.enqueueMessage(channelName, `Follow us on our socials! [Add your social links in the dashboard]`, broadcasterId, tenant.botUsername || 'global');
                 break;
             }
 
             case 'ping':
-                await this.rateLimiter.enqueueMessage(channelName, `🏓 Pong! StreamRealm Bot is online and operational. [Uptime: ${this.getUptime()}]`, broadcasterId, tenant.botUsername || 'global');
+                await this.rateLimiter.enqueueMessage(channelName, `Pong! StreamRealm Bot is online and operational. [Uptime: ${this.getUptime()}]`, broadcasterId, tenant.botUsername || 'global');
                 break;
 
             case 'shoutout':
@@ -391,7 +500,7 @@ export class ChatHandlerService {
                 if (this.hasPermission(userstate, 'MODERATOR')) {
                     const target = args[0]?.replace('@', '');
                     if (target) {
-                        await this.rateLimiter.enqueueMessage(channelName, `📢 Go check out ${target} at twitch.tv/${target}! They are doing amazing things. 💜`, broadcasterId, tenant.botUsername || 'global');
+                        await this.rateLimiter.enqueueMessage(channelName, `Go check out ${target} at twitch.tv/${target}! They are doing amazing things.`, broadcasterId, tenant.botUsername || 'global');
                     }
                 }
                 break;
@@ -425,7 +534,7 @@ export class ChatHandlerService {
                 }
 
                 if (opponent.toLowerCase() === username.toLowerCase()) {
-                    await this.rateLimiter.enqueueMessage(channelName, `${username}, you can't battle yourself! 🤔`, broadcasterId, tenant.botUsername || 'global');
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, you can't battle yourself!`, broadcasterId, tenant.botUsername || 'global');
                     break;
                 }
 
@@ -448,7 +557,7 @@ export class ChatHandlerService {
                     if (created) {
                         await this.rateLimiter.enqueueMessage(
                             channelName,
-                            `⚔️ ${username} has challenged ${opponent} to a battle! @${opponent}, type !accept or !decline (90s)`,
+                            `${username} has challenged ${opponent} to a battle! @${opponent}, type !accept or !decline (90s)`,
                             broadcasterId,
                             tenant.botUsername || 'global'
                         );
@@ -486,10 +595,9 @@ export class ChatHandlerService {
                         );
                     } else if ('winner' in result) {
                         // Type guard: result has battle data
-                        const emoji = result.winner === username ? '🏆' : '💀';
                         await this.rateLimiter.enqueueMessage(
                             channelName,
-                            `${emoji} ${result.battle.challenger.username}(${result.challengerRoll}) vs ${result.battle.opponent.username}(${result.opponentRoll}) - ${result.winner} wins! [MMR: ${result.winner === username ? result.opponentNewMMR : result.challengerNewMMR} ${result.mmrChange > 0 ? '+' : ''}${result.winner === username ? result.mmrChange : -result.mmrChange}]`,
+                            `${result.battle.challenger.username}(${result.challengerRoll}) vs ${result.battle.opponent.username}(${result.opponentRoll}) - ${result.winner} wins! [MMR: ${result.winner === username ? result.opponentNewMMR : result.challengerNewMMR} ${result.mmrChange > 0 ? '+' : ''}${result.winner === username ? result.mmrChange : -result.mmrChange}]`,
                             broadcasterId,
                             tenant.botUsername || 'global'
                         );

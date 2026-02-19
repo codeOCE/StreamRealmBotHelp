@@ -62,6 +62,8 @@ export class CommandsController {
     @Post('import')
     async importCommands(@Req() req: any, @Body() data: { commands: any[] }) {
         const tenantId = await this.getTenantId(req);
+        console.log(`[API Import] Received request for tenant ${tenantId}`);
+        console.log(`[API Import] Payload commands count: ${data.commands?.length}`);
         return this.commandsService.importBulk(tenantId, data.commands);
     }
 

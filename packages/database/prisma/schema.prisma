@@ -92,6 +92,7 @@ model Command {
   trigger      String
   enabled      Boolean      @default(true)
   cooldown     Int          @default(0)
+  userCooldown Int          @default(0)
   userLevel    UserLevel    @default(VIEWER)
   responses    Json
   responseType ResponseType @default(SAY)
@@ -100,6 +101,7 @@ model Command {
   description  String?
   category     String       @default("General")
   isBuiltIn    Boolean      @default(false)
+  isRegex      Boolean      @default(false)
   tenant       Tenant       @relation(fields: [tenantId], references: [id])
 
   @@unique([tenantId, trigger])

@@ -221,146 +221,6 @@ export class VariableService {
                     return Math.floor(Math.random() * (max - min + 1) + min).toString();
                 }
                 return Math.floor(Math.random() * 100).toString();
-            case 'time':
-                try {
-                    const options: Intl.DateTimeFormatOptions = {
-                        hour: 'numeric', minute: 'numeric', second: 'numeric',
-                        hour12: true, timeZoneName: 'short'
-                    };
-                    if (fullArgs) options.timeZone = fullArgs.trim();
-                    return new Intl.DateTimeFormat('en-US', options).format(new Date());
-                } catch { return new Date().toLocaleTimeString(); }
-            case 'accountage':
-                const uInfo = await this.twitchApi.getUserInfoById(context.userId);
-                if (uInfo?.created_at) {
-                    const created = new Date(uInfo.created_at).getTime();
-                    const diff = Date.now() - created;
-                    const years = Math.floor(diff / (31536000000));
-                    const days = Math.floor(diff / (86400000)) % 365;
-                    return `${years}y ${days}d`;
-                }
-                return 'unknown';
-            case 'customapi':
-            case 'urlfetch':
-                if (!fullArgs) return '[URL Missing]';
-                try {
-                    const res = await fetch(fullArgs);
-                    return (await res.text()).substring(0, 400);
-                } catch { return '[Fetch Error]'; }
-            case 'if':
-                // SE standard uses ; while we use , - handle both recursively
-                const delimiter = fullArgs.includes(';') ? ';' : ',';
-                const parts = fullArgs.split(delimiter).map(p => p.trim());
-
-                if (parts.length < 2) return '[Invalid If Structure]';
-
-                const condition = parts[0];
-                const trueBranch = parts[1];
-                const falseBranch = parts[2] || '';
-
-                // Truthy logic: non-empty, not "0", not "false", not "undefined", not "null"
-                const isTruthy = condition &&
-                    condition !== '0' &&
-                    condition.toLowerCase() !== 'false' &&
-                    condition.toLowerCase() !== 'undefined' &&
-                    condition.toLowerCase() !== 'null';
-
-                return isTruthy ? trueBranch : falseBranch;
-            case 'msgid':
-                return context.msgId || 'unknown';
-            case 'botname':
-                return 'StreamRealmBot';
-            case 'channel.viewers':
-                const viewers = await this.twitchApi.getViewerCount(context.channel);
-                return viewers.toLocaleString();
-            case 'channel.followers':
-            case 'followercount':
-                const followers = await this.twitchApi.getFollowerCount(context.broadcasterId);
-                return followers.toLocaleString();
-            case 'channel.subs':
-            case 'subcount':
-            case 'subscriber_count':
-                const count = await this.executeWithUserTokenRefresh(
-                    context.broadcasterId,
-                    async (token) => await this.twitchApi.getSubscriberCount(context.broadcasterId, token)
-                );
-                return count === -1 ? '0' : count?.toString() || '0';
-            case 'shoutout':
-                const target = args[0]?.replace('@', '');
-                return target ? `📢 Go check out ${target} at twitch.tv/${target}! They are doing amazing things. 💜` : '[Target Missing]';
-            case 'random.emote':
-            case 'twitchemotes':
-            case 'bttvemotes':
-            case 'ffzemotes':
-            case '7tvemotes':
-                return 'PogChamp'; // Mock for now
-            case 'channel.id':
-                return context.broadcasterId;
-            case 'channel.slug':
-                return context.channel.replace('#', '');
-            case 'latest.follower':
-                return await this.twitchApi.getLatestFollower(context.broadcasterId) || 'None';
-            case 'random.chatter': {
-                const tId = await this.getTenantId(context.broadcasterId);
-                const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-                // Find active profiles in last 5 mins
-                const activeViewers = await this.prisma.viewerProfile.findMany({
-                    where: {
-                        tenantId: tId,
-                        lastActiveAt: { gt: fiveMinutesAgo }
-                    },
-                    select: { username: true }
-                });
-
-                if (activeViewers.length === 0) return context.user;
-                const randomViewer = activeViewers[Math.floor(Math.random() * activeViewers.length)];
-                return randomViewer.username;
-            }
-            case 'repeat':
-                const repeatCount = parseInt(args[0]);
-                const repeatText = args.slice(1).join(' ');
-                if (!isNaN(repeatCount) && repeatText) {
-                    return Array(Math.min(repeatCount, 20)).fill(repeatText).join(' ');
-                }
-                return '';
-            case 'pointsname':
-                return 'Points';
-            case 'xp':
-            case 'user.xp': {
-                const tenantId = await this.getTenantId(context.broadcasterId);
-                const stats = await this.prisma.viewerProfile.findFirst({ where: { tenantId, twitchUserId: context.userId } });
-                return (stats as any)?.xp?.toLocaleString() || '0';
-            }
-            case 'level':
-            case 'user.level': {
-                const tenantId = await this.getTenantId(context.broadcasterId);
-                const stats = await this.prisma.viewerProfile.findFirst({ where: { tenantId, twitchUserId: context.userId } });
-                return (stats as any)?.level?.toString() || '1';
-            }
-            case 'rank':
-            case 'user.points_rank': {
-                const tenantId = await this.getTenantId(context.broadcasterId);
-                const count = await this.prisma.viewerProfile.count({ where: { tenantId, xp: { gt: 0 } } });
-                // Simple rank for now: total count (needs real sorting in prod)
-                return count.toString();
-            }
-            case 'points':
-            case 'user.points': {
-                const tenantId = await this.getTenantId(context.broadcasterId);
-                const stats = await this.prisma.viewerProfile.findFirst({ where: { tenantId, twitchUserId: context.userId } });
-                return (stats as any)?.points?.toLocaleString() || '0';
-            }
-            case 'queryescape':
-                return encodeURIComponent(fullArgs);
-            case 'pathescape':
-                return encodeURIComponent(fullArgs).replace(/%2F/g, '/');
-            case 'math':
-                try {
-                    // Safe math evaluation using mathjs
-                    const cleanMath = fullArgs.replace(/[^0-9+\-*/().\s]/g, '');
-                    const result = evaluate(cleanMath);
-                    return result.toString();
-                } catch { return '[Math Error]'; }
             default:
                 // Handle range arguments $(1:), $(2:) etc
                 if (cmd.endsWith(':')) {
@@ -381,6 +241,23 @@ export class VariableService {
                     if (!val && argNum === 1) return context.user;
                     return val || '';
                 }
+
+                // Handle StreamElements random.min-max syntax (e.g. random.1-100)
+                if (cmdLower.startsWith('random.') && /^random\.\d+-\d+$/.test(cmdLower)) {
+                    const rangePart = cmdLower.replace('random.', '');
+                    const [minStr, maxStr] = rangePart.split('-');
+                    const min = parseInt(minStr);
+                    const max = parseInt(maxStr);
+                    if (!isNaN(min) && !isNaN(max)) {
+                        return Math.floor(Math.random() * (max - min + 1) + min).toString();
+                    }
+                }
+
+                // Prevent recursion on unknown tags
+                if (cmdLower.startsWith('unknown:')) {
+                    return `(${content})`; // Return as plain text, breaking the $(...) loop
+                }
+
                 return `$(unknown:${cmd})`;
         }
     }

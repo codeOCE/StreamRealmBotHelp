@@ -111,7 +111,7 @@ export class BotManagerService implements OnModuleInit {
                 client.on('join', (ch, user, self) => {
                     this.logger.log(`[EVENT:join] ${user} joined ${ch} (self: ${self})`);
                     if (self && client) {
-                        client.say(ch, "StreamRealm Bot joined successfully!").catch(e => this.logger.error(`SAY FAIL in ${ch}`, e));
+                        // client.say(ch, "StreamRealm Bot joined successfully!").catch(e => this.logger.error(`SAY FAIL in ${ch}`, e));
                     }
                 });
 

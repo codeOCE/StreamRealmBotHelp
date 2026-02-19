@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useCallback, ReactNode } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 
 // Types
 export interface Widget {
@@ -11,9 +11,12 @@ export interface Widget {
     y: number;
     width: number;
     height: number;
+    rotation: number;
     config: Record<string, any>;
     styles: Record<string, any>;
     layer: number; // Higher is on top
+    isVisible: boolean;
+    isLocked: boolean;
 }
 
 export interface OverlayData {
@@ -39,14 +42,19 @@ type Action =
     | { type: 'SET_WIDGETS'; payload: Widget[] }
     | { type: 'ADD_WIDGET'; payload: { type: string; baseConfig?: any } }
     | { type: 'UPDATE_WIDGET'; payload: { id: string; updates: Partial<Widget> } }
+    | { type: 'UPDATE_WIDGET_LIVE'; payload: { id: string; updates: Partial<Widget> } }
+    | { type: 'UPDATE_WIDGET_CONFIG'; payload: { id: string; config: Record<string, any> } }
+    | { type: 'UPDATE_WIDGET_STYLE'; payload: { id: string; styles: Record<string, any> } }
     | { type: 'REMOVE_WIDGET'; payload: string }
+    | { type: 'REMOVE_SELECTED_WIDGETS' }
     | { type: 'SELECT_WIDGET'; payload: { id: string; multi: boolean } }
     | { type: 'DESELECT_ALL' }
     | { type: 'UNDO' }
     | { type: 'REDO' }
+    | { type: 'COMMIT_HISTORY' }
     | { type: 'SET_SCALE'; payload: number }
-    | { type: 'COPY' }
-    | { type: 'PASTE' };
+    | { type: 'COPY_SELECTED' }
+    | { type: 'PASTE_CLIPBOARD'; payload: { x: number, y: number } };
 
 // Context
 const EditorContext = createContext<{
@@ -81,15 +89,18 @@ function editorReducer(state: EditorState, action: Action): EditorState {
 
         case 'ADD_WIDGET': {
             const newWidget: Widget = {
-                id: uuidv4(),
+                id: nanoid(),
                 type: action.payload.type,
                 x: 100,
                 y: 100,
                 width: 300,
                 height: 200,
+                rotation: 0,
                 config: action.payload.baseConfig || {},
                 styles: {},
                 layer: state.widgets.length + 1,
+                isVisible: true,
+                isLocked: false,
             };
             const newWidgets = [...state.widgets, newWidget];
             return recordHistory({ ...state, widgets: newWidgets });
@@ -102,12 +113,43 @@ function editorReducer(state: EditorState, action: Action): EditorState {
             return recordHistory({ ...state, widgets: newWidgets });
         }
 
+        case 'UPDATE_WIDGET_LIVE': {
+            const newWidgets = state.widgets.map((w) =>
+                w.id === action.payload.id ? { ...w, ...action.payload.updates } : w
+            );
+            return { ...state, widgets: newWidgets };
+        }
+
+        case 'UPDATE_WIDGET_CONFIG': {
+            const newWidgets = state.widgets.map((w) =>
+                w.id === action.payload.id ? { ...w, config: { ...w.config, ...action.payload.config } } : w
+            );
+            return recordHistory({ ...state, widgets: newWidgets });
+        }
+
+        case 'UPDATE_WIDGET_STYLE': {
+            const newWidgets = state.widgets.map((w) =>
+                w.id === action.payload.id ? { ...w, styles: { ...w.styles, ...action.payload.styles } } : w
+            );
+            return recordHistory({ ...state, widgets: newWidgets });
+        }
+
         case 'REMOVE_WIDGET': {
             const newWidgets = state.widgets.filter((w) => w.id !== action.payload);
             return recordHistory({
                 ...state,
                 widgets: newWidgets,
                 selectedWidgetIds: state.selectedWidgetIds.filter((id) => id !== action.payload),
+            });
+        }
+
+        case 'REMOVE_SELECTED_WIDGETS': {
+            if (state.selectedWidgetIds.length === 0) return state;
+            const newWidgets = state.widgets.filter((w) => !state.selectedWidgetIds.includes(w.id));
+            return recordHistory({
+                ...state,
+                widgets: newWidgets,
+                selectedWidgetIds: [],
             });
         }
 
@@ -151,31 +193,33 @@ function editorReducer(state: EditorState, action: Action): EditorState {
             };
         }
 
+        case 'COMMIT_HISTORY':
+            return recordHistory(state);
+
         case 'SET_SCALE':
             return { ...state, scale: action.payload };
 
-        case 'COPY': {
+        case 'COPY_SELECTED': {
             const selectedWidgets = state.widgets.filter(w => state.selectedWidgetIds.includes(w.id));
-            if (selectedWidgets.length === 0) return state;
-            return { ...state, clipboard: selectedWidgets };
+            return { ...state, clipboard: JSON.parse(JSON.stringify(selectedWidgets)) };
         }
 
-        case 'PASTE': {
+        case 'PASTE_CLIPBOARD': {
             if (state.clipboard.length === 0) return state;
 
-            const newWidgets = state.clipboard.map(w => ({
+            // Calculate offset if needed, or use mouse position
+            const newWidgets = state.clipboard.map((w, idx) => ({
                 ...w,
-                id: uuidv4(),
-                x: w.x + 20,
-                y: w.y + 20,
-                layer: state.widgets.length + 1
+                id: nanoid(),
+                x: action.payload.x + (idx * 20), // Slight offset for stack visibility
+                y: action.payload.y + (idx * 20),
+                layer: state.widgets.length + idx + 1
             }));
 
-            const updatedWidgets = [...state.widgets, ...newWidgets];
-
+            const finalWidgets = [...state.widgets, ...newWidgets];
             return recordHistory({
                 ...state,
-                widgets: updatedWidgets,
+                widgets: finalWidgets,
                 selectedWidgetIds: newWidgets.map(w => w.id)
             });
         }

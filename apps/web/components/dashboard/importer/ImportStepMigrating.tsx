@@ -19,11 +19,36 @@ export function ImportStepMigrating() {
                 const userData = await userRes.json();
                 const tenantId = userData.tenantId;
 
-                const selectedCommands = state.items.filter(item => {
-                    // Match ID logic from selection step
+                console.log(`[Migration Debug] Total Items available: ${state.items.length}`);
+                console.log(`[Migration Debug] Total Selected in Set: ${state.selectedItems.size}`);
+
+                let selectedCommands: any[] = [];
+
+                // Fallback: If heuristic matches (selected size approx equals total), and filter is failing, try sending all
+                // OR if filter returns 0/low but set is high.
+
+                selectedCommands = state.items.filter(item => {
                     const id = item._id || item.id || item.name || item.command || item.trigger;
-                    return state.selectedItems.has(id);
+                    const match = state.selectedItems.has(id);
+                    // Log first few failures to see why
+                    if (!match && selectedCommands.length < 5) {
+                        console.log(`[Filter Fail] ID: ${id} | In Set: ${match}`);
+                        // Dump set content sample
+                        if (selectedCommands.length === 0) {
+                            console.log('Set Sample:', Array.from(state.selectedItems).slice(0, 3));
+                        }
+                    }
+                    return match;
                 });
+
+                // EMERGENCY FALLBACK for "Select All" case
+                if (selectedCommands.length < state.selectedItems.size && state.selectedItems.size === state.items.length) {
+                    console.log('[Migration Debug] Mismatch detected but "Select All" appears active. sending ALL items.');
+                    selectedCommands = [...state.items];
+                }
+
+                console.log(`[Migration Debug] Final Commands to Send: ${selectedCommands.length}`);
+                addLog(`Debug: Sending ${selectedCommands.length} commands to server...`);
 
                 if (selectedCommands.length === 0) {
                     addLog("No commands selected for migration.");
@@ -49,7 +74,7 @@ export function ImportStepMigrating() {
                     commands: selectedCommands
                 };
 
-                const res = await fetch('/api/commands/import/process', {
+                const res = await fetch('/api/commands/import', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

@@ -173,10 +173,16 @@ export function ImportStepConnect() {
                 throw new Error(data.error);
             }
 
+            if (!data.commands || data.commands.length === 0) {
+                toast.warning(`No commands found on ${selectedType === 'nightbot' ? 'Nightbot' : 'StreamElements'}.`);
+                setIsLoading(false);
+                return;
+            }
+
             setProvider(selectedType);
             setItems(data.commands || []);
             setStep('select');
-            toast.success(`Found ${data.commands?.length || 0} commands!`);
+            toast.success(`Found ${data.commands.length} commands!`);
 
         } catch (error: any) {
             console.error(error);

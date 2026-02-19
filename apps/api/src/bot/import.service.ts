@@ -58,8 +58,8 @@ export class ImportService {
                     throw new Error(`Command missing trigger: ${JSON.stringify(cmd)}`);
                 }
 
-                // Sanitize trigger: Remove all leading '!' as DB stores triggers without prefix
-                trigger = trigger.replace(/^!+/, '');
+                // Sanitize trigger: Remove all leading '!' and lowercase
+                trigger = trigger.replace(/^!+/, '').toLowerCase();
 
                 // Process responses with variable conversion
                 const rawResponse = cmd.reply || cmd.response || (cmd.responses ? cmd.responses[0] : '');
@@ -94,6 +94,7 @@ export class ImportService {
                         isBuiltIn: false,
                         userLevel,
                         cooldown: cmd.cooldown || 0,
+                        userCooldown: cmd.userCooldown || 0,
                     }
                 });
 

@@ -11,10 +11,12 @@ interface Command {
     usages?: number;
     userLevel: string;
     cooldown: number;
+    userCooldown?: number;
     enabled: boolean;
     isBuiltIn?: boolean;
     description?: string;
     category?: string;
+    isRegex?: boolean;
 }
 
 const CATEGORIES = [
@@ -45,9 +47,11 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
     const [aliases, setAliases] = useState<string[]>([]);
     const [userLevel, setUserLevel] = useState('VIEWER');
     const [cooldown, setCooldown] = useState(30);
+    const [userCooldown, setUserCooldown] = useState(10);
     const [responseType, setResponseType] = useState<'SAY' | 'MENTION' | 'REPLY' | 'WHISPER'>('SAY');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('General');
+    const [isRegex, setIsRegex] = useState(false);
     const [isResponseDropdownOpen, setIsResponseDropdownOpen] = useState(false);
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
     const [error, setError] = useState('');
@@ -59,18 +63,21 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
             setAliases(Array.isArray(initialData.aliases) ? initialData.aliases : []);
             setUserLevel(initialData.userLevel);
             setCooldown(initialData.cooldown);
-            setResponseType((initialData as any).responseType || 'SAY');
+            setUserCooldown(initialData.userCooldown || 0); setResponseType((initialData as any).responseType || 'SAY');
             setDescription(initialData.description || '');
             setCategory(initialData.category || 'General');
+            setIsRegex(initialData.isRegex || false);
         } else {
             setTrigger('');
             setResponses(['']);
             setAliases([]);
             setUserLevel('VIEWER');
             setCooldown(30);
+            setUserCooldown(10);
             setResponseType('SAY');
             setDescription('');
             setCategory('General');
+            setIsRegex(false);
         }
         setError('');
     }, [initialData, isOpen]);
@@ -107,23 +114,34 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
             return;
         }
 
-        if (!/^[a-zA-Z0-9_-]+$/.test(trigger)) {
-            setError('Trigger can only contain letters, numbers, underscores, and dashes.');
-            return;
+        if (isRegex) {
+            try {
+                new RegExp(trigger);
+            } catch (e) {
+                setError('Invalid regular expression.');
+                return;
+            }
+        } else {
+            if (!/^[a-zA-Z0-9_-]+$/.test(trigger)) {
+                setError('Trigger can only contain letters, numbers, underscores, and dashes.');
+                return;
+            }
         }
 
         onSave({
             id: initialData?.id,
-            trigger: trigger.toLowerCase().replace('!', ''),
+            trigger: isRegex ? trigger : trigger.toLowerCase().replace('!', ''),
             responses: filteredResponses,
             responseType,
-            aliases: aliases.map(a => a.toLowerCase().replace('!', '').trim()).filter(a => a),
+            aliases: isRegex ? [] : aliases.map(a => a.toLowerCase().replace('!', '').trim()).filter(a => a),
             userLevel,
             cooldown,
+            userCooldown,
             description,
             category,
             enabled: initialData ? initialData.enabled : true,
             isBuiltIn: initialData?.isBuiltIn || false,
+            isRegex,
         });
         onClose();
     };
@@ -160,17 +178,29 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Trigger</label>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Trigger</label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                id="isRegex"
+                                                checked={isRegex}
+                                                onChange={(e) => setIsRegex(e.target.checked)}
+                                                className="w-3 h-3 rounded bg-white/[0.1] border-white/[0.1] checked:bg-brand-primary"
+                                            />
+                                            <label htmlFor="isRegex" className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider cursor-pointer select-none">Regex Mode</label>
+                                        </div>
+                                    </div>
                                     <div className="relative group">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-primary font-black text-lg">!</span>
+                                        {!isRegex && <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-primary font-black text-lg">!</span>}
                                         <input
                                             autoFocus
                                             type="text"
                                             disabled={initialData?.isBuiltIn}
                                             value={trigger}
                                             onChange={(e) => setTrigger(e.target.value)}
-                                            className={`w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-9 py-4 focus:outline-none focus:border-brand-primary/50 transition-all font-black text-white text-lg tracking-tight placeholder:text-zinc-800 ${initialData?.isBuiltIn ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
-                                            placeholder="hello"
+                                            className={`w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-9 py-4 focus:outline-none focus:border-brand-primary/50 transition-all font-black text-white text-lg tracking-tight placeholder:text-zinc-800 ${initialData?.isBuiltIn ? 'opacity-50 grayscale cursor-not-allowed' : ''} ${isRegex ? 'font-mono text-sm px-5' : ''}`}
+                                            placeholder={isRegex ? "^hello\\s+(world|friend)$" : "hello"}
                                         />
                                     </div>
                                 </div>
@@ -178,7 +208,7 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
                                     <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Aliases</label>
                                     <input
                                         type="text"
-                                        disabled={initialData?.isBuiltIn}
+                                        disabled={initialData?.isBuiltIn || isRegex}
                                         value={aliases.join(', ')}
                                         onChange={(e) => setAliases(e.target.value.split(',').map(s => s.trim()))}
                                         className={`w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-4 focus:outline-none focus:border-brand-primary/30 transition-all text-sm font-bold text-white placeholder:text-zinc-800 ${initialData?.isBuiltIn ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
@@ -324,11 +354,25 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
                                             )}
                                         </div>
                                     ))}
-                                    <div className="p-4 rounded-xl border border-white/[0.02] bg-white/[0.01] flex flex-wrap gap-2 items-center">
-                                        <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Variables:</span>
-                                        {['{user}', '{touser}', '{count}'].map(v => (
-                                            <code key={v} className="text-[9px] text-brand-primary font-black bg-brand-primary/5 px-1.5 py-0.5 rounded">{v}</code>
-                                        ))}
+                                    <div className="p-4 rounded-xl border border-white/[0.02] bg-white/[0.01] flex flex-col gap-3">
+                                        <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Available Variables:</span>
+                                        <div className="flex flex-wrap gap-2">
+                                            {['{user}', '{touser}', '{count}', '$(user)', '$(channel)', '$(query)', '$(random.number 1-100)', '$(check.user)', '$(time)', '$(uptime)', '$(game)', '$(title)', '$(fetch url)', '$(math 1+1)', '$(pastebin url)'].map(v => (
+                                                <button
+                                                    key={v}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const activeIndex = responses.length - 1; // Append to last input for now, or use a better insertion logic if possible
+                                                        // Ideally tracking focused input, but simple append works for MVP
+                                                        updateResponseField(activeIndex, responses[activeIndex] + ' ' + v);
+                                                    }}
+                                                    className="text-[9px] text-brand-primary font-black bg-brand-primary/5 px-2 py-1 rounded hover:bg-brand-primary/10 transition-colors"
+                                                >
+                                                    {v}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="text-[9px] text-zinc-600 italic">Click to append to the last message field.</p>
                                     </div>
                                 </div>
                             </div>
@@ -362,6 +406,19 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
                                             type="number"
                                             value={cooldown}
                                             onChange={(e) => setCooldown(parseInt(e.target.value) || 0)}
+                                            className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-4 focus:outline-none focus:border-brand-primary/50 transition-all text-sm font-black text-white"
+                                            min="0"
+                                        />
+                                        <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-zinc-600 uppercase tracking-widest">Sec</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">User Cooldown</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            value={userCooldown}
+                                            onChange={(e) => setUserCooldown(parseInt(e.target.value) || 0)}
                                             className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-4 focus:outline-none focus:border-brand-primary/50 transition-all text-sm font-black text-white"
                                             min="0"
                                         />

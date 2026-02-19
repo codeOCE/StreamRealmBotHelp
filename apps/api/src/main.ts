@@ -36,12 +36,10 @@ async function bootstrap() {
 
     // Debug Middleware - runs AFTER passport.session() so we can see deserialized user
     app.use((req: Request, res: Response, next: Function) => {
-      if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
-        const sessionCookie = req.headers.cookie?.split(';').find(c => c.trim().startsWith('sr_session='));
-        console.log(`[${req.method}] ${req.path} | SessionID: ${req.sessionID} | User: ${req.user ? (req.user as any).username : 'Guest'} | SessionCookie: ${sessionCookie ? 'PRESENT' : 'MISSING'} | Cookies: ${Object.keys(req.cookies || {}).join(', ')}`);
-        if (req.user) {
-          console.log(`  └─ User details: ID=${(req.user as any).id}, Username=${(req.user as any).username}`);
-        }
+      const sessionCookie = req.headers.cookie?.split(';').find(c => c.trim().startsWith('sr_session='));
+      console.log(`[${req.method}] ${req.path} | SessionID: ${req.sessionID} | User: ${req.user ? (req.user as any).username : 'Guest'} | SessionCookie: ${sessionCookie ? 'PRESENT' : 'MISSING'}`);
+      if (req.user) {
+        console.log(`  └─ User details: ID=${(req.user as any).id}, Username=${(req.user as any).username}`);
       }
       next();
     });

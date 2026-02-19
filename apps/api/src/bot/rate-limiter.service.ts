@@ -58,7 +58,9 @@ export class MessageProcessor extends WorkerHost {
         // Helix migration for the Chat Bot Badge
         if (type === 'chat' && broadcasterId && message) {
             // Use provided botUsername or fallback to global bot
-            const effectiveBotUsername = botUsername || process.env.GLOBAL_BOT_USERNAME || 'streamrealmbot';
+            let effectiveBotUsername = botUsername || process.env.GLOBAL_BOT_USERNAME || 'streamrealmbot';
+            if (effectiveBotUsername === 'global') effectiveBotUsername = process.env.GLOBAL_BOT_USERNAME || 'streamrealmbot';
+
             const botInfo = await this.twitchApi.getUserInfo(effectiveBotUsername);
 
             if (botInfo?.id) {

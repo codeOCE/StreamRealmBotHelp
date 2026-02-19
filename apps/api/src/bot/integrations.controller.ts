@@ -323,17 +323,22 @@ export class IntegrationsController {
     async importFromStreamElements(@Req() req: any) {
         try {
             const tenantId = await this.getTenantId(req);
+            this.logger.log(`[Import] Starting for tenant ${tenantId}`);
 
             // Get StreamElements JWT from tenant settings
             const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
             const settings = (tenant?.settings as any) || {};
 
+            this.logger.log(`[Import] SE Settings present: ${!!settings.streamelements}`);
+
             if (!settings.streamelements?.jwtToken) {
+                this.logger.warn(`[Import] No JWT token found in settings`);
                 return { error: 'StreamElements not connected. Please connect first.' };
             }
 
             const jwtToken = this.security.decrypt(settings.streamelements.jwtToken);
             const channelId = settings.streamelements.channelId;
+            this.logger.log(`[Import] Using Channel ID: ${channelId}`);
 
             // Fetch commands from StreamElements API
             const response = await fetch(`https://api.streamelements.com/kappa/v2/bot/commands/${channelId}`, {
@@ -343,10 +348,15 @@ export class IntegrationsController {
             });
 
             if (!response.ok) {
+                this.logger.error(`[Import] API Error: ${response.status} ${response.statusText}`);
                 throw new Error(`StreamElements API error: ${response.statusText}`);
             }
 
             const seCommands = await response.json();
+            this.logger.log(`[Import] Fetched ${Array.isArray(seCommands) ? seCommands.length : Object.keys(seCommands).length} raw commands`);
+            this.logger.log(`StreamElements Raw Response Type: ${typeof seCommands}`);
+            this.logger.log(`StreamElements Raw Response IsArray: ${Array.isArray(seCommands)}`);
+            this.logger.log(`StreamElements Raw Keys: ${Object.keys(seCommands).slice(0, 5)}`);
 
             // Convert commands to our format
             const convertedCommands = Object.values(seCommands).map((cmd: any) => ({
@@ -355,14 +365,15 @@ export class IntegrationsController {
                 responseType: 'SAY',
                 userLevel: cmd.accessLevel === 100 ? 'viewer' : cmd.accessLevel >= 500 ? 'moderator' : 'viewer',
                 enabled: cmd.enabled,
-                cooldown: cmd.cooldown?.user || 0,
+                cooldown: cmd.cooldown?.global || 0,
+                userCooldown: cmd.cooldown?.user || 0,
                 description: `Imported from StreamElements`,
                 isBuiltIn: false,
                 originalResponse: cmd.reply, // Keep original for reference
                 conversions: this.variableParser.getConversionSummary(cmd.reply, 'streamelements'),
             }));
 
-            this.logger.log(`Imported ${convertedCommands.length} commands from StreamElements`);
+            this.logger.log(`[Import] Successfully converted ${convertedCommands.length} commands`);
             return { commands: convertedCommands };
         } catch (error) {
             this.logger.error('StreamElements import error:', error);

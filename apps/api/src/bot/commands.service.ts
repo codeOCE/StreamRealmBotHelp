@@ -15,28 +15,28 @@ export class CommandsService {
     ) { }
 
     private readonly builtInDefaults = [
-        { trigger: 'uptime', category: 'Streaming', description: 'Shows how long the stream has been live.', userLevel: 'VIEWER' as UserLevel, cooldown: 10, responses: [] },
-        { trigger: 'game', category: 'Streaming', description: 'Shows the current game being played.', userLevel: 'VIEWER' as UserLevel, cooldown: 10, responses: [] },
-        { trigger: 'title', category: 'Streaming', description: 'Shows the current stream title.', userLevel: 'VIEWER' as UserLevel, cooldown: 10, responses: [] },
+        { trigger: 'uptime', category: 'Streaming', description: 'Shows how long the stream has been live.', userLevel: 'VIEWER' as UserLevel, cooldown: 10, userCooldown: 5, responses: [] },
+        { trigger: 'game', category: 'Streaming', description: 'Shows the current game being played.', userLevel: 'VIEWER' as UserLevel, cooldown: 10, userCooldown: 5, responses: [] },
+        { trigger: 'title', category: 'Streaming', description: 'Shows the current stream title.', userLevel: 'VIEWER' as UserLevel, cooldown: 10, userCooldown: 5, responses: [] },
 
-        { trigger: 'stats', category: 'Loyalty', description: 'Displays your XP, Level, and Watchtime.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, responses: [] },
-        { trigger: 'xp', category: 'Loyalty', description: 'Alias for !stats.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, responses: [] },
-        { trigger: 'top', category: 'Loyalty', description: 'Shows the top XP leaderboard.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, responses: [] },
-        { trigger: 'leaderboard', category: 'Loyalty', description: 'Alias for !top.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, responses: [] },
-        { trigger: 'watchtime', category: 'Loyalty', description: 'Shows how much time you have spent in the stream.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, responses: [] },
-        { trigger: 'followage', category: 'Loyalty', description: 'Shows how long you have been following the channel.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, responses: [] },
+        { trigger: 'stats', category: 'Loyalty', description: 'Displays your XP, Level, and Watchtime.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, userCooldown: 30, responses: [] },
+        { trigger: 'xp', category: 'Loyalty', description: 'Alias for !stats.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, userCooldown: 30, responses: [] },
+        { trigger: 'top', category: 'Loyalty', description: 'Shows the top XP leaderboard.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, userCooldown: 60, responses: [] },
+        { trigger: 'leaderboard', category: 'Loyalty', description: 'Alias for !top.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, userCooldown: 60, responses: [] },
+        { trigger: 'watchtime', category: 'Loyalty', description: 'Shows how much time you have spent in the stream.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, userCooldown: 30, responses: [] },
+        { trigger: 'followage', category: 'Loyalty', description: 'Shows how long you have been following the channel.', userLevel: 'VIEWER' as UserLevel, cooldown: 15, userCooldown: 30, responses: [] },
 
-        { trigger: 'socials', category: 'Utility', description: 'Displays links to social media profiles.', userLevel: 'VIEWER' as UserLevel, cooldown: 20, responses: [] },
-        { trigger: 'commands', category: 'Utility', description: 'Lists all available commands.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, responses: [] },
-        { trigger: 'help', category: 'Utility', description: 'Alias for !commands.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, responses: [] },
-        { trigger: 'ping', category: 'Utility', description: 'Check if the bot is online.', userLevel: 'VIEWER' as UserLevel, cooldown: 5, responses: [] },
+        { trigger: 'socials', category: 'Utility', description: 'Displays links to social media profiles.', userLevel: 'VIEWER' as UserLevel, cooldown: 20, userCooldown: 60, responses: [] },
+        { trigger: 'commands', category: 'Utility', description: 'Lists all available commands.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, userCooldown: 10, responses: [] },
+        { trigger: 'help', category: 'Utility', description: 'Alias for !commands.', userLevel: 'VIEWER' as UserLevel, cooldown: 30, userCooldown: 10, responses: [] },
+        { trigger: 'ping', category: 'Utility', description: 'Check if the bot is online.', userLevel: 'VIEWER' as UserLevel, cooldown: 5, userCooldown: 10, responses: [] },
 
-        { trigger: 'shoutout', category: 'Moderation', description: 'Give a shoutout to another streamer.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
-        { trigger: 'so', category: 'Moderation', description: 'Alias for !shoutout.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
-        { trigger: 'addcom', category: 'Moderation', description: 'Add a new custom command from chat.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
-        { trigger: 'editcom', category: 'Moderation', description: 'Edit an existing custom command from chat.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
-        { trigger: 'delcom', category: 'Moderation', description: 'Delete a custom command from chat.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
-        { trigger: 'permit', category: 'Moderation', description: 'Permit a user to post links.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, responses: [] },
+        { trigger: 'shoutout', category: 'Moderation', description: 'Give a shoutout to another streamer.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, userCooldown: 0, responses: [] },
+        { trigger: 'so', category: 'Moderation', description: 'Alias for !shoutout.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, userCooldown: 0, responses: [] },
+        { trigger: 'addcom', category: 'Moderation', description: 'Add a new custom command from chat.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, userCooldown: 0, responses: [] },
+        { trigger: 'editcom', category: 'Moderation', description: 'Edit an existing custom command from chat.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, userCooldown: 0, responses: [] },
+        { trigger: 'delcom', category: 'Moderation', description: 'Delete a custom command from chat.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, userCooldown: 0, responses: [] },
+        { trigger: 'permit', category: 'Moderation', description: 'Permit a user to post links.', userLevel: 'MODERATOR' as UserLevel, cooldown: 0, userCooldown: 0, responses: [] },
     ];
 
     async findAll(tenantId: string) {
@@ -73,7 +73,7 @@ export class CommandsService {
         }
     }
 
-    async create(tenantId: string, data: { trigger: string; responses: any; responseType?: any; aliases?: any; cooldown: number; userLevel: UserLevel; description?: string; category?: string }) {
+    async create(tenantId: string, data: { trigger: string; responses: any; responseType?: any; aliases?: any; cooldown: number; userCooldown?: number; userLevel: UserLevel; description?: string; category?: string; isRegex?: boolean }) {
         // Automatically normalize external syntax (SE, etc)
         const normalizedResponses = Array.isArray(data.responses)
             ? data.responses.map(r => this.variableService.normalizeSyntax(r))
@@ -86,6 +86,8 @@ export class CommandsService {
                 tenantId,
                 isBuiltIn: false,
                 category: data.category || 'General',
+                userCooldown: data.userCooldown || 0,
+                isRegex: data.isRegex || false,
             },
         });
 
@@ -101,7 +103,7 @@ export class CommandsService {
         return cmd;
     }
 
-    async update(id: string, data: { trigger?: string; responses?: any; responseType?: any; aliases?: any; usages?: number; cooldown?: number; userLevel?: UserLevel; enabled?: boolean; description?: string; category?: string }) {
+    async update(id: string, data: { trigger?: string; responses?: any; responseType?: any; aliases?: any; usages?: number; cooldown?: number; userCooldown?: number; userLevel?: UserLevel; enabled?: boolean; description?: string; category?: string; isRegex?: boolean }) {
         // Automatically normalize external syntax (SE, etc) if responses are being updated
         if (data.responses) {
             data.responses = Array.isArray(data.responses)
@@ -152,7 +154,8 @@ export class CommandsService {
         const results = {
             imported: 0,
             skipped: 0,
-            errors: 0
+            failed: 0,
+            failedCommands: [] as string[]
         };
 
         for (const rawCmd of commands) {
@@ -185,6 +188,14 @@ export class CommandsService {
                     ? rawCmd.responses.map((r: string) => this.variableService.normalizeSyntax(r))
                     : [this.variableService.normalizeSyntax(rawCmd.responses as string)];
 
+                // Map user level
+                let userLevel: UserLevel = UserLevel.VIEWER;
+                const reqLevel = (rawCmd.userLevel || 'viewer').toString().toLowerCase();
+                if (reqLevel === 'moderator' || reqLevel === 'mod') userLevel = UserLevel.MODERATOR;
+                else if (reqLevel === 'vip') userLevel = UserLevel.VIP;
+                else if (reqLevel === 'subscriber' || reqLevel === 'sub') userLevel = UserLevel.SUBSCRIBER;
+                else if (reqLevel === 'broadcaster' || reqLevel === 'owner') userLevel = UserLevel.BROADCASTER;
+
                 await this.prisma.command.create({
                     data: {
                         tenantId,
@@ -192,17 +203,20 @@ export class CommandsService {
                         responses: normalizedResponses,
                         description: rawCmd.description || `Imported from ${rawCmd.source || 'external bot'}`,
                         category: rawCmd.category || 'Imported',
-                        userLevel: rawCmd.userLevel || 'VIEWER',
+                        userLevel: userLevel,
                         cooldown: rawCmd.cooldown || 10,
+                        userCooldown: rawCmd.userCooldown || 5, // Default user cooldown
                         enabled: true,
-                        isBuiltIn: false
+                        isBuiltIn: false,
+                        isRegex: false // Default for imported commands
                     }
                 });
 
                 results.imported++;
-            } catch (err) {
+            } catch (err: any) {
                 console.error(`Failed to import command: ${rawCmd.trigger}`, err);
-                results.errors++;
+                results.failed++;
+                results.failedCommands.push(`${rawCmd.trigger}: ${err.message}`);
             }
         }
 

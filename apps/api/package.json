@@ -38,6 +38,7 @@
     "express-session": "^1.19.0",
     "ioredis": "^5.9.3",
     "mathjs": "^15.1.1",
+    "nanoid": "^3.3.11",
     "passport": "^0.7.0",
     "passport-twitch-new": "^0.0.3",
     "reflect-metadata": "^0.2.2",
