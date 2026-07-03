@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { Music } from 'lucide-react';
 import { apiUrl } from '@/lib/api';
 import { connectRealtime } from '@/lib/realtime';
-import { buildAlertSrcDoc, isAlertEventAllowed, getAlertEventConfig, EVENT_ICONS, eventListLabel, speakDonationAlert } from '@/lib/alert-renderer';
+import { buildAlertSrcDoc, isAlertEventAllowed, resolveAlertPresentation, EVENT_ICONS, eventListLabel, speakDonationAlert } from '@/lib/alert-renderer';
 import { getAnimationStyle } from '@/lib/widget-animations';
 import { isBundleWidget, getWidgetDefinition } from '@/lib/widgets/registry';
 import { buildWidgetSrcDoc, normalizeEvent } from '@/lib/widgets/runtime';
@@ -84,12 +84,20 @@ export default function PublicOverlayPage() {
             return;
         }
         const next = alertQueueRef.current.shift();
-        setActiveAlert(next);
+        const alertWidget = overlayRef.current?.widgets?.find((w: Widget) => w.type === 'alert');
+        // Variation match (amount thresholds) → duration + sound + {variant} for the template.
+        const pres = resolveAlertPresentation(alertWidget?.config ?? {}, next);
+        setActiveAlert(pres.variant ? { ...next, variant: pres.variant } : next);
         alertPlayingRef.current = true;
         speakDonationAlert(next);
-
-        const alertWidget = overlayRef.current?.widgets?.find((w: Widget) => w.type === 'alert');
-        const duration = getAlertEventConfig(alertWidget?.config ?? {}, next.type).duration;
+        if (pres.sound?.url) {
+            try {
+                const audio = new Audio(pres.sound.url);
+                audio.volume = Math.min(1, Math.max(0, pres.sound.volume ?? 0.8));
+                void audio.play().catch(() => undefined);
+            } catch { /* autoplay blocked or bad URL — alert still shows */ }
+        }
+        const duration = pres.duration;
 
         alertTimerRef.current = setTimeout(() => {
             setActiveAlert(null);

@@ -105,10 +105,30 @@ export interface AlertData {
     message?: string;
     amount?: number;
     tier?: string;
+    /** Name of the matched variation (e.g. "Big Cheer"); '' when none. */
+    variant?: string;
     /** When true, overlay reads the tip message aloud (browser TTS fallback). */
     speakMessage?: boolean;
     /** Polly MP3 URL (preferred). */
     ttsUrl?: string | null;
+}
+
+export interface AlertSound {
+    url: string;
+    /** 0..1, defaults to 0.8. */
+    volume?: number;
+}
+
+/**
+ * Amount-threshold variation of an event's alert (e.g. cheer >= 1000 bits).
+ * The highest matching minAmount wins; unset fields fall back to the event
+ * config. `name` is exposed to templates as {variant} / alertData.variant.
+ */
+export interface AlertVariation {
+    name: string;
+    minAmount: number;
+    duration?: number;
+    sound?: AlertSound | null;
 }
 
 /** Play donation TTS on the overlay. */
@@ -146,6 +166,8 @@ export interface AlertEventConfig {
     enabled: boolean;
     duration: number;
     minAmount?: number;
+    sound?: AlertSound | null;
+    variations?: AlertVariation[];
 }
 
 export function getAlertEventConfig(config: Record<string, any>, eventType: string): AlertEventConfig {
@@ -157,6 +179,31 @@ export function getAlertEventConfig(config: Record<string, any>, eventType: stri
         enabled: ev.enabled !== false,
         duration: ev.duration ?? globalDuration,
         minAmount: ev.minAmount,
+        sound: ev.sound?.url ? ev.sound : null,
+        variations: Array.isArray(ev.variations) ? ev.variations : [],
+    };
+}
+
+/**
+ * Effective duration / sound / variant name for an alert. The variation with
+ * the highest minAmount <= amount wins; anything it doesn't override falls
+ * back to the event config.
+ */
+export function resolveAlertPresentation(
+    config: Record<string, any>,
+    alertData: AlertData,
+): { duration: number; sound: AlertSound | null; variant: string } {
+    const evCfg = getAlertEventConfig(config, alertData.type);
+    const amount = alertData.amount ?? 0;
+    let best: AlertVariation | null = null;
+    for (const v of evCfg.variations ?? []) {
+        const min = v.minAmount ?? 0;
+        if (amount >= min && (!best || min > (best.minAmount ?? 0))) best = v;
+    }
+    return {
+        duration: best?.duration ?? evCfg.duration,
+        sound: best?.sound?.url ? best.sound : evCfg.sound ?? null,
+        variant: best?.name ?? '',
     };
 }
 
@@ -178,6 +225,7 @@ export function buildAlertSrcDoc(config: Record<string, any>, alertData: AlertDa
         message:  alertData.message  ?? '',
         amount:   alertData.amount   ?? 0,
         tier:     alertData.tier     ?? '',
+        variant:  alertData.variant  ?? '',
         speakMessage: !!alertData.speakMessage,
     };
 
@@ -186,7 +234,8 @@ export function buildAlertSrcDoc(config: Record<string, any>, alertData: AlertDa
         .replace(/\{type\}/g,     safe.type)
         .replace(/\{message\}/g,  safe.message)
         .replace(/\{amount\}/g,   String(safe.amount))
-        .replace(/\{tier\}/g,     safe.tier);
+        .replace(/\{tier\}/g,     safe.tier)
+        .replace(/\{variant\}/g,  safe.variant);
 
     return `<!DOCTYPE html>
 <html>

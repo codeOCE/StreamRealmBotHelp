@@ -4,6 +4,7 @@ import { botSchema } from '../lib/supabase';
 import { getUserFromSession } from '../lib/session';
 import { error, json } from '../lib/response';
 import { broadcast } from '../realtime';
+import { uploadPublic, safeExt } from '../lib/storage';
 
 /**
  * Overlays + widgets — ported from the NestJS OverlayController/OverlayService/
@@ -122,6 +123,23 @@ export async function handleOverlays(
   async function ownedOverlay(id: string) {
     const { data } = await bot.from('overlays').select('id').eq('id', id).eq('streamer_id', streamerId).maybeSingle();
     return !!data;
+  }
+
+  // POST /api/overlays/upload — store an alert sound / image asset, return its URL.
+  if (method === 'POST' && seg[0] === 'upload') {
+    const form = await request.formData().catch(() => null);
+    const file = form?.get('file') as unknown;
+    if (!(file instanceof File)) return error('file required', 400, request, env);
+    const isImage = file.type.startsWith('image/');
+    const isAudio = file.type.startsWith('audio/');
+    if (!isImage && !isAudio) return error('must be an image or audio file', 400, request, env);
+    const limit = isAudio ? 2 * 1024 * 1024 : 3 * 1024 * 1024;
+    if (file.size > limit) return error(`file must be under ${limit / (1024 * 1024)}MB`, 400, request, env);
+    const kind = isAudio ? 'sounds' : 'images';
+    const p = `overlay/${kind}/${streamerId}/${crypto.randomUUID()}.${safeExt(file.name, isAudio ? 'mp3' : 'png')}`;
+    const url = await uploadPublic(supabase, p, file, file.type);
+    if (!url) return error('Upload failed', 500, request, env);
+    return json({ url }, request, env, { status: 201 });
   }
 
   // GET /api/overlays — list
@@ -280,17 +298,26 @@ export async function handleOverlays(
   if (method === 'POST' && (seg[1] === 'test-alert' || seg[1] === 'test-chat')) {
     if (!(await ownedOverlay(id))) return error('Overlay not found', 404, request, env);
     if (seg[1] === 'test-alert') {
-      // Optional { type } in the body lets creators preview any alert type on the
-      // live overlay (follow/subscribe/cheer/raid), matching the widget editor.
-      const body = (await request.json().catch(() => ({}))) as { type?: string };
+      // Body may override any sample field ({ type, username, message, amount,
+      // tier }) so the editor can test amount-based variations and all 6 types.
+      const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
       const SAMPLES: Record<string, Record<string, unknown>> = {
         follow: { type: 'follow', username: 'SirTestsalot', message: '', amount: 0, tier: '' },
         subscribe: { type: 'subscribe', username: 'LadyValiant', message: 'Love the stream!', amount: 6, tier: '1000' },
         cheer: { type: 'cheer', username: 'BaronBits', message: 'For the treasury!', amount: 100, tier: '' },
         raid: { type: 'raid', username: 'QueenRaidalot', message: '', amount: 25, tier: '' },
+        donation: { type: 'donation', username: 'DukeOfCoin', message: 'Keep it up!', amount: 5, tier: '' },
+        gift: { type: 'gift', username: 'GiftGiver', message: '', amount: 1, tier: '1000' },
       };
-      const sample = SAMPLES[body.type ?? 'follow'] ?? SAMPLES.follow;
-      await broadcast(env, `overlay:${id}`, 'alert', sample);
+      const sample = SAMPLES[String(body.type ?? 'follow')] ?? SAMPLES.follow;
+      const alert = {
+        ...sample,
+        username: String(body.username ?? sample.username).slice(0, 60),
+        message: String(body.message ?? sample.message).slice(0, 200),
+        amount: Number.isFinite(Number(body.amount)) ? Number(body.amount) : sample.amount,
+        tier: String(body.tier ?? sample.tier).slice(0, 8),
+      };
+      await broadcast(env, `overlay:${id}`, 'alert', alert);
     } else {
       await broadcast(env, `overlay:${id}`, 'chat', { username: 'CreatorCastle', message: 'Test chat message for your overlay.', color: '#a855f7' });
     }

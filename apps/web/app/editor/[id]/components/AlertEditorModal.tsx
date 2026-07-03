@@ -9,6 +9,8 @@ import {
     DEFAULT_ALERT_CSS,
     DEFAULT_ALERT_JS,
     AlertData,
+    AlertSound,
+    AlertVariation,
 } from '@/lib/alert-renderer';
 import { apiUrl } from '@/lib/api';
 import { PresetGallery } from './PresetGallery';
@@ -66,6 +68,7 @@ const VARIABLES = [
     { v: '{message}',  desc: 'Message left by the viewer (sub, cheer, tip)' },
     { v: '{amount}',   desc: 'Bits cheered, raider count, or tip amount' },
     { v: '{tier}',     desc: 'Sub tier: 1000 (Tier 1), 2000 (Tier 2), 3000 (Tier 3)' },
+    { v: '{variant}',  desc: 'Name of the matched variation (empty when none matched)' },
 ];
 
 type CodeTab = 'html' | 'css' | 'js';
@@ -285,7 +288,27 @@ export function AlertEditorModal({ widget, onClose }: Props) {
                                     </label>
                                 </>
                             )}
+
+                            <div className="w-px h-4 bg-white/8" />
+
+                            {/* Alert sound */}
+                            <label className="flex items-center gap-2">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-zinc-600">Sound</span>
+                                <SoundPicker
+                                    sound={eventCfg.sound}
+                                    onChange={(sound) => updateEventCfg(selectedEventKey, { sound })}
+                                />
+                            </label>
                         </div>
+
+                        {/* Variations — bigger events get their own sound/duration + {variant} */}
+                        {selectedEvent.hasAmount && (
+                            <VariationsPanel
+                                amountLabel={selectedEvent.amountLabel ?? 'Min amount'}
+                                variations={eventCfg.variations ?? []}
+                                onChange={(variations) => updateEventCfg(selectedEventKey, { variations })}
+                            />
+                        )}
 
                         {/* Code editor area */}
                         <div className="flex-1 flex flex-col p-4 gap-3 overflow-hidden">
@@ -438,16 +461,21 @@ export function AlertEditorModal({ widget, onClose }: Props) {
 function TestButton({ widget, event }: { widget: Widget; event: typeof EVENTS[number] }) {
     const { state } = useEditor();
     const [firing, setFiring] = useState(false);
+    const [amount, setAmount] = useState<string>('');
 
     const handleTest = async () => {
         if (!state.overlay?.id || firing) return;
         setFiring(true);
         try {
+            const body: AlertData = { ...event.preview };
+            if (event.hasAmount && amount.trim() !== '' && Number.isFinite(Number(amount))) {
+                body.amount = Number(amount);
+            }
             await fetch(apiUrl(`/api/overlays/${state.overlay.id}/test-alert`), {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(event.preview),
+                body: JSON.stringify(body),
             });
         } finally {
             setTimeout(() => setFiring(false), 1500);
@@ -455,17 +483,166 @@ function TestButton({ widget, event }: { widget: Widget; event: typeof EVENTS[nu
     };
 
     return (
-        <button
-            onClick={handleTest}
-            disabled={firing}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-[background-color,border-color,color,opacity] duration-150 border ${
-                firing
-                    ? 'bg-brand-primary/5 border-brand-primary/10 text-brand-primary/40 cursor-not-allowed'
-                    : 'bg-brand-primary/[0.08] hover:bg-brand-primary/15 border-brand-primary/20 text-brand-primary cursor-pointer'
-            }`}
-        >
-            <Zap size={12} className={firing ? 'animate-pulse' : ''} />
-            {firing ? 'Sending…' : `Test ${event.label} alert`}
-        </button>
+        <div className="flex items-stretch gap-2">
+            {event.hasAmount && (
+                <input
+                    type="number"
+                    min={0}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder={String(event.preview.amount ?? 0)}
+                    title="Amount to test with (fires matching variations)"
+                    className="w-20 bg-white/[0.03] border border-white/8 rounded-xl px-2 text-[11px] text-white font-bold text-center focus:outline-none focus:border-brand-primary/50 transition-[border-color] duration-150 tabular-nums"
+                />
+            )}
+            <button
+                onClick={handleTest}
+                disabled={firing}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-[background-color,border-color,color,opacity] duration-150 border ${
+                    firing
+                        ? 'bg-brand-primary/5 border-brand-primary/10 text-brand-primary/40 cursor-not-allowed'
+                        : 'bg-brand-primary/[0.08] hover:bg-brand-primary/15 border-brand-primary/20 text-brand-primary cursor-pointer'
+                }`}
+            >
+                <Zap size={12} className={firing ? 'animate-pulse' : ''} />
+                {firing ? 'Sending…' : `Test ${event.label} alert`}
+            </button>
+        </div>
+    );
+}
+
+// ── SoundPicker ────────────────────────────────────────────────────────────
+
+function SoundPicker({ sound, onChange }: { sound: AlertSound | null | undefined; onChange: (s: AlertSound | null) => void }) {
+    const [busy, setBusy] = useState(false);
+
+    const upload = async (file: File) => {
+        setBusy(true);
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch(apiUrl('/api/overlays/upload'), { method: 'POST', credentials: 'include', body: fd });
+            if (!res.ok) {
+                alert((await res.json().catch(() => ({}))).error || 'Upload failed');
+                return;
+            }
+            const { url } = await res.json();
+            onChange({ url, volume: sound?.volume ?? 0.8 });
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    if (!sound?.url) {
+        return (
+            <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg bg-white/[0.03] border border-white/8 text-zinc-500 hover:text-zinc-300 text-[10px] font-bold px-2.5 py-1 transition-colors duration-150">
+                <input type="file" accept="audio/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
+                {busy ? 'Uploading…' : '+ Upload'}
+            </label>
+        );
+    }
+    return (
+        <span className="inline-flex items-center gap-1.5">
+            <button
+                onClick={() => { try { const a = new Audio(sound.url); a.volume = Math.min(1, Math.max(0, sound.volume ?? 0.8)); void a.play().catch(() => undefined); } catch { /* bad URL */ } }}
+                title="Preview sound"
+                className="px-2 py-1 rounded-lg bg-white/[0.03] border border-white/8 text-zinc-400 hover:text-white text-[10px] font-bold transition-colors duration-150 cursor-pointer"
+            >
+                ▶
+            </button>
+            <input
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round((sound.volume ?? 0.8) * 100)}
+                onChange={(e) => onChange({ ...sound, volume: Number(e.target.value) / 100 })}
+                title={`Volume ${Math.round((sound.volume ?? 0.8) * 100)}%`}
+                className="w-16 accent-brand-primary"
+            />
+            <button
+                onClick={() => onChange(null)}
+                title="Remove sound"
+                className="p-1 rounded text-zinc-600 hover:text-rose-400 transition-colors duration-150 cursor-pointer"
+            >
+                <X size={10} />
+            </button>
+        </span>
+    );
+}
+
+// ── VariationsPanel ────────────────────────────────────────────────────────
+
+function VariationsPanel({
+    amountLabel,
+    variations,
+    onChange,
+}: {
+    amountLabel: string;
+    variations: AlertVariation[];
+    onChange: (v: AlertVariation[]) => void;
+}) {
+    const update = (i: number, patch: Partial<AlertVariation>) =>
+        onChange(variations.map((v, idx) => (idx === i ? { ...v, ...patch } : v)));
+
+    return (
+        <div className="px-5 py-2.5 bg-[#0a0c11] border-b border-white/5 shrink-0 space-y-1.5">
+            <div className="flex items-center gap-3">
+                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-600">
+                    Variations {variations.length > 0 && <span className="text-brand-primary">({variations.length})</span>}
+                </span>
+                <span className="text-[9px] text-zinc-700">bigger amounts can override sound & duration — highest match wins</span>
+                <div className="flex-1" />
+                <button
+                    onClick={() => onChange([...variations, { name: `Big ${variations.length + 1}`, minAmount: 100 }].slice(0, 8))}
+                    disabled={variations.length >= 8}
+                    className="text-[9px] font-black uppercase tracking-wider text-brand-primary hover:underline disabled:opacity-40 cursor-pointer"
+                >
+                    + Add
+                </button>
+            </div>
+            {variations.map((v, i) => (
+                <div key={i} className="flex items-center gap-2 flex-wrap">
+                    <input
+                        value={v.name}
+                        onChange={(e) => update(i, { name: e.target.value.slice(0, 40) })}
+                        placeholder="Name"
+                        title="Exposed to the template as {variant}"
+                        className="w-28 bg-white/[0.03] border border-white/8 rounded-lg px-2 py-1 text-[10px] text-white font-bold focus:outline-none focus:border-brand-primary/50 transition-[border-color] duration-150"
+                    />
+                    <label className="flex items-center gap-1 text-[9px] text-zinc-600 font-bold">
+                        {amountLabel} ≥
+                        <input
+                            type="number"
+                            min={0}
+                            value={v.minAmount ?? 0}
+                            onChange={(e) => update(i, { minAmount: Math.max(0, Number(e.target.value) || 0) })}
+                            className="w-16 bg-white/[0.03] border border-white/8 rounded-lg px-2 py-1 text-[10px] text-white font-bold text-center focus:outline-none focus:border-brand-primary/50 transition-[border-color] duration-150 tabular-nums"
+                        />
+                    </label>
+                    <label className="flex items-center gap-1 text-[9px] text-zinc-600 font-bold">
+                        ms
+                        <input
+                            type="number"
+                            step={500}
+                            min={1000}
+                            max={30000}
+                            value={v.duration ?? ''}
+                            onChange={(e) => update(i, { duration: e.target.value === '' ? undefined : Number(e.target.value) })}
+                            placeholder="default"
+                            title="Duration override (blank = event default)"
+                            className="w-16 bg-white/[0.03] border border-white/8 rounded-lg px-2 py-1 text-[10px] text-white font-bold text-center focus:outline-none focus:border-brand-primary/50 transition-[border-color] duration-150 tabular-nums"
+                        />
+                    </label>
+                    <SoundPicker sound={v.sound} onChange={(sound) => update(i, { sound })} />
+                    <button
+                        onClick={() => onChange(variations.filter((_, idx) => idx !== i))}
+                        title="Delete variation"
+                        className="p-1 rounded text-zinc-600 hover:text-rose-400 transition-colors duration-150 cursor-pointer"
+                    >
+                        <X size={11} />
+                    </button>
+                </div>
+            ))}
+        </div>
     );
 }
