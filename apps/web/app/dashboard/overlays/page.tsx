@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Copy, Edit, ExternalLink, Layers, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiUrl } from '@/lib/api';
+import { OVERLAY_THEMES, ThemeWidget } from '@/lib/overlay-themes';
 import {
     ActionChip, DeleteButton, EmptyState, FeatureHeader, FeaturePage,
     Field, LoadingGrid, Panel, ProgressRow,
@@ -26,6 +27,7 @@ export default function OverlaysPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newOverlayName, setNewOverlayName] = useState('');
     const [newOverlayDescription, setNewOverlayDescription] = useState('');
+    const [themeId, setThemeId] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
 
     useEffect(() => { fetchOverlays(); }, []);
@@ -54,11 +56,31 @@ export default function OverlaysPage() {
                 body: JSON.stringify({ name: newOverlayName, description: newOverlayDescription }),
             });
             if (!res.ok) { toast.error('Could not create overlay'); return; }
-            toast.success('Overlay created');
+            const overlay = await res.json();
+
+            // Stamp the chosen theme's widgets onto the new overlay.
+            const theme = OVERLAY_THEMES.find((t) => t.id === themeId);
+            if (theme) {
+                for (const w of theme.widgets) {
+                    await fetch(apiUrl(`/api/overlays/${overlay.id}/widgets`), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(w),
+                    });
+                }
+            }
+
+            toast.success(theme ? `Overlay created with the ${theme.name} theme` : 'Overlay created');
             setShowCreateModal(false);
             setNewOverlayName('');
             setNewOverlayDescription('');
-            fetchOverlays();
+            setThemeId(null);
+            if (theme) {
+                router.push(`/editor/${overlay.id}`);
+            } else {
+                fetchOverlays();
+            }
         } finally {
             setCreating(false);
         }
@@ -82,6 +104,7 @@ export default function OverlaysPage() {
         setShowCreateModal(false);
         setNewOverlayName('');
         setNewOverlayDescription('');
+        setThemeId(null);
     };
 
     if (loading) {
@@ -184,7 +207,7 @@ export default function OverlaysPage() {
                     className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-[700] p-4 animate-in fade-in duration-200"
                     onClick={(e) => e.target === e.currentTarget && closeModal()}
                 >
-                    <Panel className="w-full max-w-md !rounded-[2rem] animate-in zoom-in-95 duration-200" title="New Overlay">
+                    <Panel className="w-full max-w-2xl !rounded-[2rem] animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto" title="New Overlay">
                         <div className="space-y-4">
                             <Field label="Overlay name">
                                 <input
@@ -201,9 +224,33 @@ export default function OverlaysPage() {
                                     value={newOverlayDescription}
                                     onChange={(e) => setNewOverlayDescription(e.target.value)}
                                     className="void-input resize-none"
-                                    rows={3}
+                                    rows={2}
                                     placeholder="Optional…"
                                 />
+                            </Field>
+
+                            <Field label="Theme">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    <ThemeCard
+                                        selected={themeId === null}
+                                        accent="#71717a"
+                                        name="Blank"
+                                        description="Start from an empty canvas."
+                                        widgets={[]}
+                                        onClick={() => setThemeId(null)}
+                                    />
+                                    {OVERLAY_THEMES.map((t) => (
+                                        <ThemeCard
+                                            key={t.id}
+                                            selected={themeId === t.id}
+                                            accent={t.accent}
+                                            name={t.name}
+                                            description={t.description}
+                                            widgets={t.widgets}
+                                            onClick={() => setThemeId(t.id)}
+                                        />
+                                    ))}
+                                </div>
                             </Field>
                         </div>
                         <div className="flex gap-3 mt-6 pt-6 border-t border-white/[0.06]">
@@ -214,12 +261,71 @@ export default function OverlaysPage() {
                                 disabled={!newOverlayName.trim() || creating}
                                 className="saas-button flex-[2] disabled:opacity-50"
                             >
-                                {creating ? 'Creating…' : 'Create Overlay'}
+                                {creating ? 'Creating…' : themeId ? 'Create & open editor' : 'Create Overlay'}
                             </button>
                         </div>
                     </Panel>
                 </div>
             )}
         </FeaturePage>
+    );
+}
+
+/** Gallery card: accent swatch, name, and a miniature 16:9 map of the theme's widget layout. */
+function ThemeCard({
+    selected,
+    accent,
+    name,
+    description,
+    widgets,
+    onClick,
+}: {
+    selected: boolean;
+    accent: string;
+    name: string;
+    description: string;
+    widgets: ThemeWidget[];
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            title={description}
+            className={`text-left rounded-2xl border p-3 transition-all cursor-pointer ${
+                selected
+                    ? 'border-brand-primary/60 bg-brand-primary/[0.08] ring-1 ring-brand-primary/40'
+                    : 'border-white/8 bg-white/[0.02] hover:border-white/20'
+            }`}
+        >
+            {/* Mini 1920x1080 layout map */}
+            <div className="relative w-full aspect-video rounded-lg bg-black/40 border border-white/[0.06] overflow-hidden mb-2.5">
+                {widgets.length === 0 ? (
+                    <span className="absolute inset-0 flex items-center justify-center text-[9px] font-black uppercase tracking-widest text-zinc-700">
+                        Empty
+                    </span>
+                ) : (
+                    widgets.map((w, i) => (
+                        <span
+                            key={i}
+                            className="absolute rounded-[3px]"
+                            style={{
+                                left: `${(w.x / 1920) * 100}%`,
+                                top: `${(w.y / 1080) * 100}%`,
+                                width: `${(w.width / 1920) * 100}%`,
+                                height: `${(w.height / 1080) * 100}%`,
+                                background: w.type === 'alert' ? 'transparent' : `${accent}33`,
+                                border: `1px ${w.type === 'alert' ? 'dashed' : 'solid'} ${accent}${w.type === 'alert' ? 'aa' : '66'}`,
+                            }}
+                        />
+                    ))
+                )}
+            </div>
+            <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: accent }} />
+                <span className="text-[11px] font-black text-white truncate">{name}</span>
+            </div>
+            <p className="text-[9px] text-zinc-600 mt-1 line-clamp-2 leading-relaxed">{description}</p>
+        </button>
     );
 }
