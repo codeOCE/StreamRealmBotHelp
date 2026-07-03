@@ -335,8 +335,8 @@ export function LeftSidebar() {
                         type: 'ADD_WIDGET',
                         payload: {
                             type: 'alert',
-                            width: 560,
-                            height: 320,
+                            width: 840,
+                            height: 480,
                             baseConfig: {
                                 name: 'Alert Box',
                                 htmlTemplate: DEFAULT_ALERT_HTML,

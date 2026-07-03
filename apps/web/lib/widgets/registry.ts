@@ -34,7 +34,7 @@ const nativeDefs: WidgetDefinition[] = [
     },
     {
         type: 'alert', name: 'Alert', icon: 'Bell', renderMode: 'native',
-        defaultSize: { width: 560, height: 320 },
+        defaultSize: { width: 840, height: 480 },
         listens: ['follower-latest', 'subscriber-latest', 'cheer-latest', 'raid-latest', 'tip-latest'],
         fields: {},
     },
