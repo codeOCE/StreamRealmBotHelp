@@ -11,6 +11,7 @@ import { isBundleWidget, getWidgetDefinition } from '@/lib/widgets/registry';
 import { buildWidgetSrcDoc, normalizeEvent } from '@/lib/widgets/runtime';
 import type { OverlayEvent, ChannelContext } from '@/lib/widgets/types';
 import { ChatList } from '@/lib/chat-config';
+import { ScaledAlertFrame } from '@/components/ScaledAlertFrame';
 
 interface Widget {
     id: string;
@@ -193,13 +194,11 @@ export default function PublicOverlayPage() {
                                 zIndex: widget.zIndex,
                             }}
                         >
-                            <iframe
-                                key={JSON.stringify(activeAlert)}
+                            <ScaledAlertFrame
+                                frameKey={JSON.stringify(activeAlert)}
                                 srcDoc={buildAlertSrcDoc(widget.config, activeAlert)}
-                                sandbox="allow-scripts"
-                                className="w-full h-full border-0"
-                                style={{ background: 'transparent' }}
-                                title="Alert"
+                                widgetWidth={widget.width}
+                                widgetHeight={widget.height}
                             />
                         </div>
                     );

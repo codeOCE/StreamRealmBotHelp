@@ -13,6 +13,7 @@ import {
     AlertVariation,
 } from '@/lib/alert-renderer';
 import { apiUrl } from '@/lib/api';
+import { ScaledAlertFrame } from '@/components/ScaledAlertFrame';
 import { PresetGallery } from './PresetGallery';
 import { AlertPreset } from '@/lib/alert-presets';
 import { X, RotateCcw, Zap, Bell, Clock, Info, RefreshCw, LayoutGrid } from 'lucide-react';
@@ -421,12 +422,11 @@ export function AlertEditorModal({ widget, onClose }: Props) {
                                     maxHeight: '100%',
                                 }}
                             >
-                                <iframe
-                                    key={`${selectedEventKey}-${previewKey}`}
+                                <ScaledAlertFrame
+                                    frameKey={`${selectedEventKey}-${previewKey}`}
                                     srcDoc={srcDoc}
-                                    sandbox="allow-scripts"
-                                    className="w-full h-full border-0"
-                                    style={{ background: 'transparent', display: 'block' }}
+                                    widgetWidth={widget.width}
+                                    widgetHeight={widget.height}
                                     title={`${selectedEvent.label} alert preview`}
                                 />
                             </div>

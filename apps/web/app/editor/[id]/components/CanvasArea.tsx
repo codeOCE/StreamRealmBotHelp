@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import Selecto from 'react-selecto';
 import { useEditor, Widget } from '../store';
 import { buildAlertSrcDoc, EVENT_ICONS, eventListLabel } from '@/lib/alert-renderer';
+import { ScaledAlertFrame } from '@/components/ScaledAlertFrame';
 import { getAnimationStyle, animationReplayKey } from '@/lib/widget-animations';
 import { isBundleWidget, getWidgetDefinition } from '@/lib/widgets/registry';
 import { buildWidgetSrcDoc } from '@/lib/widgets/runtime';
@@ -373,15 +374,14 @@ export function CanvasArea() {
 
                                         {widget.type === 'alert' && (
                                             <div className="relative w-full h-full">
-                                                <iframe
-                                                    key={state.activeAlert ? JSON.stringify(state.activeAlert) : 'preview'}
+                                                <ScaledAlertFrame
+                                                    frameKey={state.activeAlert ? JSON.stringify(state.activeAlert) : 'preview'}
                                                     srcDoc={buildAlertSrcDoc(
                                                         widget.config,
                                                         state.activeAlert ?? { type: 'follow', username: 'PreviewUser', message: '' }
                                                     )}
-                                                    sandbox="allow-scripts"
-                                                    className="absolute inset-0 w-full h-full border-0 pointer-events-none"
-                                                    style={{ background: 'transparent' }}
+                                                    widgetWidth={widget.width}
+                                                    widgetHeight={widget.height}
                                                     title="Alert preview"
                                                 />
                                                 {/* Shield so the iframe can't capture the pointer mid-drag. */}
