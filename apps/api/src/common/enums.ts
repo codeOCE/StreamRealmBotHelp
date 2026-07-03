@@ -1,0 +1,7 @@
+export enum UserLevel {
+    VIEWER = 'VIEWER',
+    SUBSCRIBER = 'SUBSCRIBER',
+    VIP = 'VIP',
+    MODERATOR = 'MODERATOR',
+    BROADCASTER = 'BROADCASTER'
+}

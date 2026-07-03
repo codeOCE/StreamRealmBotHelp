@@ -220,7 +220,7 @@ export class IntegrationsController {
     }
 
     @Get('nightbot/import')
-    async importFromNightbot(@Req() req: any) {
+    async importFromNightbot(@Req() req: any, @Query('type') type: string = 'commands') {
         try {
             const tenantId = await this.getTenantId(req);
 
@@ -233,6 +233,29 @@ export class IntegrationsController {
             }
 
             const accessToken = this.security.decrypt(settings.nightbot.accessToken);
+
+            if (type === 'timers') {
+                const response = await fetch('https://api.nightbot.tv/1/timers', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` },
+                });
+                if (!response.ok) throw new Error(`Nightbot API error: ${response.statusText}`);
+
+                const data = await response.json();
+                const convertedTimers = (data.timers || []).map((timer: any) => ({
+                    name: timer.name,
+                    message: this.variableParser.parseNightbotVariables(timer.message),
+                    intervalSeconds: (timer.interval || 5) * 60,
+                    chatLines: timer.lines || 0,
+                    enabled: timer.enabled,
+                }));
+
+                this.logger.log(`Imported ${convertedTimers.length} timers from Nightbot`);
+                return { commands: convertedTimers };
+            }
+
+            if (type === 'points') {
+                return { error: 'Nightbot has no points/loyalty system to import.' };
+            }
 
             // Fetch commands from Nightbot API
             const response = await fetch('https://api.nightbot.tv/1/commands', {
@@ -320,7 +343,7 @@ export class IntegrationsController {
     }
 
     @Get('streamelements/import')
-    async importFromStreamElements(@Req() req: any) {
+    async importFromStreamElements(@Req() req: any, @Query('type') type: string = 'commands') {
         try {
             const tenantId = await this.getTenantId(req);
             this.logger.log(`[Import] Starting for tenant ${tenantId}`);
@@ -339,6 +362,49 @@ export class IntegrationsController {
             const jwtToken = this.security.decrypt(settings.streamelements.jwtToken);
             const channelId = settings.streamelements.channelId;
             this.logger.log(`[Import] Using Channel ID: ${channelId}`);
+
+            if (type === 'timers') {
+                const response = await fetch(`https://api.streamelements.com/kappa/v2/bot/timers/${channelId}`, {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` },
+                });
+                if (!response.ok) throw new Error(`StreamElements API error: ${response.statusText}`);
+
+                const seTimers = await response.json();
+                const intervalMinutes = (t: any) => t.online?.interval || t.offline?.interval || 15;
+
+                // A SE timer can rotate multiple messages; we only support one message per timer,
+                // so fan each message out into its own timer entry.
+                const convertedTimers = (Array.isArray(seTimers) ? seTimers : []).flatMap((timer: any) =>
+                    (timer.messages || []).map((message: string, idx: number) => ({
+                        id: `${timer._id}-${idx}`,
+                        name: timer.messages.length > 1 ? `${timer.name} #${idx + 1}` : timer.name,
+                        message: this.variableParser.parseStreamElementsVariables(message),
+                        intervalSeconds: intervalMinutes(timer) * 60,
+                        chatLines: timer.chatLines || 0,
+                        enabled: timer.enabled,
+                    }))
+                );
+
+                this.logger.log(`[Import] Imported ${convertedTimers.length} timers from StreamElements`);
+                return { commands: convertedTimers };
+            }
+
+            if (type === 'points') {
+                const response = await fetch(`https://api.streamelements.com/kappa/v2/points/${channelId}/top?limit=1000`, {
+                    headers: { 'Authorization': `Bearer ${jwtToken}` },
+                });
+                if (!response.ok) throw new Error(`StreamElements API error: ${response.statusText}`);
+
+                const data = await response.json();
+                const convertedPoints = (data.users || []).map((u: any) => ({
+                    id: u.username,
+                    username: u.username,
+                    points: u.points,
+                }));
+
+                this.logger.log(`[Import] Imported ${convertedPoints.length} point balances from StreamElements`);
+                return { commands: convertedPoints };
+            }
 
             // Fetch commands from StreamElements API
             const response = await fetch(`https://api.streamelements.com/kappa/v2/bot/commands/${channelId}`, {

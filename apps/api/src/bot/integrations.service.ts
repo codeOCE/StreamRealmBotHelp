@@ -26,7 +26,7 @@ export class IntegrationsService {
                 tokenUrl: 'https://api.nightbot.tv/oauth2/token',
                 clientId,
                 clientSecret,
-                scope: 'commands'
+                scope: 'commands timers'
             };
         }
         return null;

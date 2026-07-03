@@ -14,7 +14,7 @@ export class ImportController {
 
     @Post('process')
     @HttpCode(HttpStatus.OK)
-    async processImport(@Body() body: { tenantId: string; provider: string; commands: any[] }) {
-        return this.importService.processImport(body.tenantId, body.provider, body.commands);
+    async processImport(@Body() body: { tenantId: string; provider: string; commands: any[]; dataType?: string }) {
+        return this.importService.processImport(body.tenantId, body.provider, body.commands, body.dataType);
     }
 }

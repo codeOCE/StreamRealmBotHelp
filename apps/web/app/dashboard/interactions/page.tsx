@@ -1,17 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter, ShoppingCart, Zap, Gamepad2, Mic2, BarChart3, Plus } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { Gamepad2, BarChart3 } from 'lucide-react';
 import { InteractionCard } from '@/components/dashboard/interactions/InteractionCard';
-import { BattleModule } from '@/components/dashboard/interactions/BattleModule';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
-// Mock Data
+// Marketplace catalog. Modules with an `href` are built and navigate to their
+// management page; everything else renders as a disabled "Coming Soon" card.
 const MODULES = [
+    {
+        id: 'bingo',
+        title: 'Stream Bingo',
+        description: 'Set the tiles — viewers generate their own cards and mark them live as you call.',
+        rating: 4.9,
+        price: 'Free',
+        category: 'mini-games',
+        isInstalled: true,
+        href: '/dashboard/bingo',
+    },
+    {
+        id: 'wheel',
+        title: 'Wheel Spin',
+        description: 'Configure a prize wheel and spin it live on stream with a real-time OBS overlay.',
+        rating: 4.8,
+        price: 'Free',
+        category: 'mini-games',
+        isInstalled: true,
+        href: '/dashboard/wheel',
+    },
+    {
+        id: 'win-loss-draw',
+        title: 'Win / Loss / Draw',
+        description: 'A fully customizable session record scoreboard overlay for OBS.',
+        rating: 4.7,
+        price: 'Free',
+        category: 'visual-fx',
+        isInstalled: true,
+        href: '/dashboard/win-loss-draw',
+    },
     {
         id: 'battles',
         title: 'Viewer Battles',
@@ -103,194 +130,182 @@ const CATEGORIES = [
 ];
 
 export default function InteractionsPage() {
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [activeTab, setActiveTab] = useState('market'); // 'market' | 'library'
+
+    // A module is "real" (installable/usable today) only if it has a management
+    // page to navigate to. Everything else is gated as Coming Soon for launch.
+    const isReal = (mod: { href?: string }) => Boolean(mod.href);
 
     const filteredModules = MODULES.filter(mod => {
         const matchesCategory = selectedCategory === 'all' || mod.category === selectedCategory;
         const matchesSearch = mod.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             mod.description.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesTab = activeTab === 'library' ? mod.isInstalled : true;
+        const matchesTab = activeTab === 'library' ? isReal(mod) : true;
 
         return matchesCategory && matchesSearch && matchesTab;
     });
 
     return (
-        <div className="container mx-auto p-6 space-y-8 min-h-screen">
-            {/* Header / Nav */}
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div className="space-y-8 max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 flex-wrap">
                 <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-                        Interaction Market
-                    </h1>
-                    <p className="text-muted-foreground">Discover new ways to engage your community</p>
+                    <h1 className="text-3xl font-black tracking-tight text-white font-heading">Interactions</h1>
+                    <p className="text-brand-muted text-sm font-medium mt-1">Community tools and mini-games for your stream.</p>
                 </div>
-
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                    <div className="relative w-full md:w-96">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            placeholder="Search for mini-games, alerts, or effects..."
-                            className="pl-9 bg-secondary/50 border-0 ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <Button variant="ghost" size="icon">
-                        <ShoppingCart className="h-5 w-5" />
-                    </Button>
+                <div className="relative w-full md:w-80">
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input
+                        placeholder="Search tools..."
+                        className="void-input pl-10"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
             </div>
 
-            {/* Featured Banner (Only show in Market 'all' view) */}
+            {/* Featured */}
             {activeTab === 'market' && selectedCategory === 'all' && !searchQuery && (
-                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 border border-white/10 shadow-2xl">
-                    <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
-                    <div className="relative z-10 p-8 md:p-12 flex flex-col md:flex-row gap-8 items-center">
-                        <div className="flex-1 space-y-6">
-                            <Badge className="bg-white/10 hover:bg-white/20 text-white border-0 backdrop-blur-md px-4 py-1.5">
-                                FEATURED TOOL OF THE MONTH
-                            </Badge>
-                            <div>
-                                <h2 className="text-4xl md:text-5xl font-black text-white mb-2">
-                                    Chaos Crowd Vote
+                <div className="matrix-card border-2 p-0 group overflow-hidden">
+                    <div className="scanline opacity-20" />
+                    <div className="relative z-10 p-12 md:p-16 flex flex-col md:flex-row gap-16 items-center">
+                        <div className="flex-1 space-y-12">
+                            <div className="flex items-center gap-4">
+                                <span className="px-4 py-1 rounded-lg bg-brand-primary text-background text-[9px] font-black ">FEATURED</span>
+                                <div className="h-[1px] flex-1 bg-brand-primary/20" />
+                            </div>
+                            <div className="space-y-6">
+                                <h2 className="text-5xl md:text-7xl font-black text-white tracking-tight uppercase leading-none font-display">
+                                    Chaos <span className="text-brand-primary">Vote</span>
                                 </h2>
-                                <p className="text-lg text-slate-300 max-w-xl leading-relaxed">
-                                    Let your audience directly control your game events with real-time voting.
-                                    Support for over 50+ popular titles including RPGs and FPS.
+                                <p className="text-base text-zinc-400 font-medium leading-relaxed max-w-2xl">
+                                    Let your audience control game events with real-time voting. Support for 50+ titles.
                                 </p>
                             </div>
-                            <div className="flex gap-4">
-                                <Button size="lg" className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 shadow-lg shadow-purple-900/50">
-                                    Install Now
-                                </Button>
-                                <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                                    View Demo
-                                </Button>
+                            <div className="flex gap-6">
+                                <button
+                                    disabled
+                                    className="text-[10px] tracking-[0.15em] rounded-xl px-8 py-3 bg-white/[0.02] border border-white/10 text-zinc-600 font-black uppercase cursor-not-allowed"
+                                >
+                                    Coming Soon
+                                </button>
                             </div>
                         </div>
-                        {/* Abstract Visual / Image Placeholder */}
-                        <div className="hidden md:block w-96 h-64 bg-slate-800/50 rounded-xl backdrop-blur-sm border border-white/10 shadow-inner flex items-center justify-center">
-                            <Gamepad2 className="w-24 h-24 text-white/20" />
+                        <div className="hidden lg:flex w-72 h-72 border border-brand-primary/10 bg-brand-primary/[0.02] items-center justify-center relative overflow-hidden group-hover:border-brand-primary/30 transition-all duration-700">
+                            <div className="absolute inset-0 bg-brand-primary opacity-0 group-hover:opacity-5 transition-opacity" />
+                            <Gamepad2 className="w-32 h-32 text-brand-primary/5 group-hover:text-brand-primary/10 transition-all duration-700" />
+                            <div className="absolute top-4 left-4 text-[8px] text-brand-primary/20 font-black tracking-widest">Preview</div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Main Content Area */}
-            <div className="space-y-6">
-                <Tabs defaultValue="market" onValueChange={setActiveTab} className="w-full">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                        <div className="flex flex-wrap gap-2">
-                            {CATEGORIES.map(category => (
-                                <Button
-                                    key={category.id}
-                                    variant={selectedCategory === category.id ? 'default' : 'secondary'}
-                                    size="sm"
-                                    onClick={() => setSelectedCategory(category.id)}
-                                    className="rounded-full px-4 transition-all"
-                                >
-                                    {category.label}
-                                </Button>
-                            ))}
-                        </div>
-
-                        <TabsList className="bg-secondary/50">
-                            <TabsTrigger value="market">Market</TabsTrigger>
-                            <TabsTrigger value="library">My Library</TabsTrigger>
-                        </TabsList>
+            {/* Tools grid */}
+            <div className="space-y-12">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
+                    <div className="flex flex-wrap gap-2">
+                        {CATEGORIES.map(category => (
+                            <button
+                                key={category.id}
+                                onClick={() => setSelectedCategory(category.id)}
+                                className={cn(
+                                    "px-5 py-2 rounded-xl border transition-colors duration-150 text-[10px] font-black  cursor-pointer",
+                                    selectedCategory === category.id
+                                        ? "bg-brand-primary text-background border-brand-primary shadow-glow-p"
+                                        : "bg-white/[0.02] text-zinc-500 border-white/5 hover:text-white hover:bg-white/[0.05]"
+                                )}
+                            >
+                                {category.label}
+                            </button>
+                        ))}
                     </div>
 
-                    <TabsContent value="market" className="mt-0">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {filteredModules.map(module => (
-                                <Dialog key={module.id}>
-                                    <DialogTrigger asChild>
-                                        <div className="cursor-pointer h-full">
-                                            <InteractionCard
-                                                title={module.title}
-                                                description={module.description}
-                                                rating={module.rating}
-                                                price={module.price}
-                                                isNew={module.isNew}
-                                                isPro={module.isPro}
-                                                isInstalled={module.isInstalled}
-                                                onAction={() => { }} // Placeholder
-                                            />
-                                        </div>
-                                    </DialogTrigger>
-                                    <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-                                        {/* If it's the Battles module, show the actual component */}
-                                        {module.id === 'battles' ? (
-                                            <div className="p-4">
-                                                <div className="flex items-center gap-4 mb-6">
-                                                    <div className="w-16 h-16 bg-primary/20 rounded-lg flex items-center justify-center">
-                                                        <Zap className="w-8 h-8 text-primary" />
-                                                    </div>
-                                                    <div>
-                                                        <h2 className="text-2xl font-bold">{module.title}</h2>
-                                                        <p className="text-muted-foreground">Installed • v1.2.0</p>
-                                                    </div>
-                                                </div>
-                                                <BattleModule />
-                                            </div>
-                                        ) : (
-                                            <div className="p-12 text-center space-y-4">
-                                                <div className="w-24 h-24 bg-muted rounded-full mx-auto flex items-center justify-center">
-                                                    <Plus className="w-12 h-12 text-muted-foreground" />
-                                                </div>
-                                                <h2 className="text-2xl font-bold">Module Details: {module.title}</h2>
-                                                <p>This is where detailed screenshots, configuration options, and documentation would live.</p>
-                                                <Button>Install Module</Button>
-                                            </div>
-                                        )}
-                                    </DialogContent>
-                                </Dialog>
-                            ))}
-                        </div>
-                    </TabsContent>
+                    <div className="flex bg-white/[0.03] border border-white/5 rounded-2xl p-1">
+                        <button
+                            onClick={() => setActiveTab('market')}
+                            className={cn(
+                                "px-6 py-2 rounded-xl text-[10px] font-black transition-colors duration-150  cursor-pointer",
+                                activeTab === 'market' ? "bg-brand-primary text-background shadow-glow-p" : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Marketplace
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('library')}
+                            className={cn(
+                                "px-6 py-2 rounded-xl text-[10px] font-black transition-colors duration-150  cursor-pointer",
+                                activeTab === 'library' ? "bg-brand-primary text-background shadow-glow-p" : "text-zinc-500 hover:text-white"
+                            )}
+                        >
+                            Installed
+                        </button>
+                    </div>
+                </div>
 
-                    <TabsContent value="library" className="mt-0">
-                        {filteredModules.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {filteredModules.map(module => (
-                                    <Dialog key={module.id}>
-                                        <DialogTrigger asChild>
-                                            <div className="cursor-pointer h-full">
-                                                <InteractionCard
-                                                    title={module.title}
-                                                    description={module.description}
-                                                    rating={module.rating}
-                                                    price={module.price}
-                                                    isNew={module.isNew}
-                                                    isPro={module.isPro}
-                                                    isInstalled={module.isInstalled}
-                                                    onAction={() => { }}
-                                                />
-                                            </div>
-                                        </DialogTrigger>
-                                        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-                                            {module.id === 'battles' ? (
-                                                <div className="p-4">
-                                                    <h2 className="text-2xl font-bold mb-4">{module.title}</h2>
-                                                    <BattleModule />
-                                                </div>
-                                            ) : (
-                                                <div className="p-8 text-center">Config placeholder</div>
-                                            )}
-                                        </DialogContent>
-                                    </Dialog>
-                                ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredModules.map(module => {
+                        const href = (module as { href?: string }).href;
+
+                        // Real, installed features navigate to their own management page.
+                        if (href) {
+                            return (
+                                <div
+                                    key={module.id}
+                                    onClick={() => router.push(href)}
+                                    className="cursor-pointer h-full"
+                                >
+                                    <InteractionCard
+                                        title={module.title}
+                                        description={module.description}
+                                        rating={module.rating}
+                                        price={module.price}
+                                        isNew={module.isNew}
+                                        isPro={module.isPro}
+                                        isInstalled={module.isInstalled}
+                                        onAction={() => router.push(href)}
+                                    />
+                                </div>
+                            );
+                        }
+
+                        // Not yet built — show as a disabled "Coming Soon" card.
+                        return (
+                            <div key={module.id} className="h-full">
+                                <InteractionCard
+                                    title={module.title}
+                                    description={module.description}
+                                    rating={module.rating}
+                                    price={module.price}
+                                    isNew={module.isNew}
+                                    isPro={module.isPro}
+                                    comingSoon
+                                />
                             </div>
-                        ) : (
-                            <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed">
-                                <p className="text-muted-foreground">You haven't installed any modules yet.</p>
-                                <Button variant="link" onClick={() => setActiveTab('market')}>Browse Store</Button>
-                            </div>
-                        )}
-                    </TabsContent>
-                </Tabs>
+                        );
+                    })}
+                </div>
+
+                {activeTab === 'library' && filteredModules.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-32 border-2 border-dashed border-brand-primary/10 bg-brand-primary/[0.01] text-center gap-10 group">
+                        <div className="w-20 h-20 border border-brand-primary/20 flex items-center justify-center opacity-20 group-hover:opacity-100 group-hover:border-brand-primary transition-all duration-700">
+                            <BarChart3 className="w-10 h-10 text-brand-primary" />
+                        </div>
+                        <div className="space-y-6">
+                            <p className="text-zinc-600 text-[10px] font-black ">No tools installed yet</p>
+                            <button
+                                onClick={() => setActiveTab('market')}
+                                className="text-brand-primary font-black text-[10px]  border-b border-brand-primary/40 pb-1 hover:text-white hover:border-white transition-all"
+                            >
+                                Browse Marketplace →
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

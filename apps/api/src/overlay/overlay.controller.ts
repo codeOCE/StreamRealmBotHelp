@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { OverlayService } from './overlay.service';
 import { OverlayWidgetService } from './overlay-widget.service';
+import { OverlayEventsGateway } from './overlay-events.gateway';
 import { AuthenticatedGuard } from '../auth/authenticated.guard';
 import { PrismaService } from '../common/prisma/prisma.service';
 
@@ -24,6 +25,7 @@ export class OverlayController {
     constructor(
         private overlayService: OverlayService,
         private widgetService: OverlayWidgetService,
+        private gateway: OverlayEventsGateway,
         private prisma: PrismaService,
     ) { }
 
@@ -32,7 +34,7 @@ export class OverlayController {
         if (!user) {
             throw new UnauthorizedException('User not authenticated');
         }
-        
+
         const tenant = await this.prisma.tenant.findFirst({
             where: { ownerId: user.id }
         });
@@ -167,6 +169,17 @@ export class OverlayController {
         return this.widgetService.deleteWidget(widgetId, tenantId);
     }
 
+    @Post(':id/sync')
+    @UseGuards(AuthenticatedGuard)
+    async syncOverlay(
+        @Param('id') id: string,
+        @Req() req: any,
+        @Body() data: { widgets: any[] }
+    ) {
+        const tenantId = await this.getTenantId(req);
+        return this.widgetService.syncWidgets(id, tenantId, data.widgets);
+    }
+
     @Post(':id/widgets/reorder')
     @UseGuards(AuthenticatedGuard)
     async reorderWidgets(
@@ -183,5 +196,25 @@ export class OverlayController {
     @Get('public/:urlSlug')
     async getPublicOverlay(@Param('urlSlug') urlSlug: string) {
         return this.overlayService.getOverlayBySlug(urlSlug);
+    }
+
+    @Post(':id/test-alert')
+    @UseGuards(AuthenticatedGuard)
+    async testAlert(
+        @Param('id') id: string
+    ) {
+        return this.gateway.emitTestAlert(id);
+    }
+
+    @Post(':id/test-chat')
+    @UseGuards(AuthenticatedGuard)
+    async testChat(
+        @Param('id') id: string
+    ) {
+        return this.gateway.emitChatMessage(id, {
+            username: 'StreamPulseHelper',
+            message: 'Hello! This is a test chat message for your overlay.',
+            color: '#a855f7',
+        });
     }
 }

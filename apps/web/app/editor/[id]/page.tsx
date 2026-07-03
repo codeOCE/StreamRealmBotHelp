@@ -5,6 +5,10 @@ import { useParams } from 'next/navigation';
 import { EditorLayout } from './components/EditorLayout';
 import { useEditor } from './store';
 import { EditorProvider } from './store';
+import { useRef } from 'react';
+import { apiUrl } from '@/lib/api';
+import { isDevSkipAuth } from '@/lib/dev-auth';
+import { connectRealtime } from '@/lib/realtime';
 
 export default function OverlayEditorPage() {
     return (
@@ -20,6 +24,7 @@ function EditorContent() {
     const { dispatch } = useEditor();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const socketRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         const fetchOverlay = async () => {
@@ -27,35 +32,23 @@ function EditorContent() {
                 setLoading(true);
                 setError(null);
 
-                // Fetch overlay data - standard session cookies will be sent
-                // The backend automatically scopes this to the authenticated user's tenant
-                const res = await fetch(`/api/overlays/${overlayId}`);
+                const res = await fetch(apiUrl(`/api/overlays/${overlayId}`), { credentials: 'include' });
 
-                if (res.status === 401) {
-                    throw new Error('Not authenticated');
-                }
-
-                if (!res.ok) {
-                    throw new Error(`Failed to fetch overlay: ${res.statusText}`);
-                }
+                if (res.status === 401 && !isDevSkipAuth()) throw new Error('Not authenticated');
+                if (!res.ok) throw new Error(`Failed to fetch overlay: ${res.statusText}`);
 
                 const data = await res.json();
 
-                // Initialize Store
                 dispatch({
                     type: 'SET_OVERLAY',
-                    payload: {
-                        id: data.id,
-                        name: data.name,
-                        width: data.width || 1920,
-                        height: data.height || 1080
-                    }
+                    payload: { id: data.id, name: data.name, width: data.width || 1920, height: data.height || 1080 }
                 });
 
                 if (data.widgets && Array.isArray(data.widgets)) {
                     dispatch({ type: 'SET_WIDGETS', payload: data.widgets });
                 }
 
+                initSocket(data.id);
             } catch (err: any) {
                 console.error('Failed to init editor:', err);
                 setError(err.message);
@@ -64,17 +57,31 @@ function EditorContent() {
             }
         };
 
-        if (overlayId) {
-            fetchOverlay();
-        }
+        const initSocket = (id: string) => {
+            if (socketRef.current) return;
+            socketRef.current = connectRealtime(`overlay:${id}`, (event, data) => {
+                if (event === 'chat') {
+                    dispatch({ type: 'ADD_CHAT_MESSAGE', payload: data });
+                } else if (event === 'alert') {
+                    dispatch({ type: 'SET_ACTIVE_ALERT', payload: data });
+                    setTimeout(() => dispatch({ type: 'SET_ACTIVE_ALERT', payload: null }), 5000);
+                }
+            });
+        };
+
+        if (overlayId) fetchOverlay();
+
+        return () => {
+            if (socketRef.current) { socketRef.current(); socketRef.current = null; }
+        };
     }, [overlayId, dispatch]);
 
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-neutral-950 text-white font-sans">
+            <div className="flex h-screen items-center justify-center bg-[#05070a] text-white">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin" />
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Initializing Workspace</p>
+                    <div className="w-10 h-10 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-600">Loading editor…</p>
                 </div>
             </div>
         );
@@ -82,18 +89,25 @@ function EditorContent() {
 
     if (error) {
         return (
-            <div className="flex h-screen items-center justify-center bg-neutral-950 text-white font-sans p-8">
-                <div className="max-w-md w-full bg-neutral-900 border border-red-500/20 rounded-2xl p-8 text-center shadow-2xl">
-                    <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor font-white"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <div className="flex h-screen items-center justify-center bg-[#05070a] text-white p-8">
+                <div className="max-w-sm w-full bg-surface-base border border-rose-500/20 rounded-2xl p-8 text-center shadow-2xl">
+                    <div className="w-14 h-14 bg-rose-500/10 text-rose-400 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
                     </div>
-                    <h2 className="text-xl font-black uppercase tracking-tight mb-2">Access Denied</h2>
-                    <p className="text-neutral-400 text-sm mb-8">{error === 'Not authenticated' ? 'Please sign in to access the overlay editor.' : error}</p>
+                    <h2 className="text-base font-black text-white tracking-tight mb-1">
+                        {error === 'Not authenticated' ? 'Sign in required' : 'Could not load overlay'}
+                    </h2>
+                    <p className="text-zinc-500 text-xs mb-6 leading-relaxed">
+                        {error === 'Not authenticated' ? 'Please sign in to access the overlay editor.' : error}
+                    </p>
                     <button
-                        onClick={() => window.location.href = '/dashboard'}
-                        className="px-8 py-3 bg-white text-black rounded-lg text-xs font-black uppercase tracking-wider hover:bg-neutral-200 transition-colors"
+                        onClick={() => window.location.href = '/dashboard/overlays'}
+                        className="saas-button w-full"
                     >
-                        Return to Dashboard
+                        Back to Overlays
                     </button>
                 </div>
             </div>

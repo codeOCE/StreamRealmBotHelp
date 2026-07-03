@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Trophy, Sparkles } from 'lucide-react';
 import SkillTree from '@/components/loyalty/SkillTree';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Toaster, toast } from 'sonner';
+import { fetchJson } from '@/lib/api';
+import { DEV_USER, fetchCurrentUser } from '@/lib/dev-auth';
+import { FeaturePage, FeatureHeader, StatTile, SectionLabel } from '@/components/dashboard/FeatureUI';
 
 interface DashboardData {
     tenantId: string;
@@ -16,104 +19,100 @@ interface DashboardData {
         skillPoints: number;
         unlockedSkills: { skillNodeId: string }[];
     };
-    skillTree: any[]; // Typing handled in component
+    skillTree: any[];
 }
 
 export default function LoyaltyPage() {
     const [data, setData] = useState<DashboardData | null>(null);
+    const [twitchUserId, setTwitchUserId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Hardcoded for demo/dev as per previous steps
-    const USER_ID = '96085876';
-    const API_BASE = '/api/loyalty';
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
-            const res = await fetch(`${API_BASE}/dashboard/${USER_ID}`);
-            if (!res.ok) throw new Error('Failed to fetch data');
-            const json = await res.json();
-            setData(json);
+
+            const me = await fetchCurrentUser();
+            const id = String(
+                (me as { twitchId?: string; twitch_id?: string })?.twitchId
+                ?? (me as { twitch_id?: string })?.twitch_id
+                ?? DEV_USER.twitchId,
+            );
+            setTwitchUserId(id);
+
+            const json = await fetchJson(`/api/loyalty/dashboard/${id}`);
+            if (!json || typeof json !== 'object' || !('profile' in json)) {
+                throw new Error('Invalid loyalty response');
+            }
+            setData(json as DashboardData);
         } catch (err) {
             console.error(err);
             toast.error('Failed to load loyalty data');
+            setData(null);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [fetchData]);
 
     const handleUnlock = async (cost: number) => {
         if (!data) return;
-        // Optimistic update
-        setData(prev => prev ? ({
+        setData((prev) => prev ? ({
             ...prev,
             profile: {
                 ...prev.profile,
-                skillPoints: prev.profile.skillPoints - cost
-            }
+                skillPoints: prev.profile.skillPoints - cost,
+            },
         }) : null);
-
-        // Background refresh to get exact server state
         setTimeout(fetchData, 500);
     };
 
-    if (isLoading) {
-        return <div className="text-white p-8">Loading Loyalty System...</div>;
-    }
-
-    if (!data) {
-        return <div className="text-white p-8">Error loading data.</div>;
-    }
-
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <FeaturePage>
             <Toaster position="top-right" theme="dark" />
+            <FeatureHeader
+                icon={Trophy}
+                title="Loyalty"
+                subtitle="Reward your community with XP and loyalty points."
+            />
 
-            <div className="flex flex-col gap-2 border-l-4 border-brand-primary pl-6 py-2">
-                <h1 className="text-3xl font-black tracking-tight text-white uppercase">Loyalty & Progression</h1>
-                <p className="text-zinc-500 text-sm font-bold tracking-wide">Manage skill trees, viewer levels, and season rewards.</p>
-            </div>
+            {isLoading ? (
+                <>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {[0, 1, 2, 3].map((i) => <div key={i} className="stat-card"><div className="skeleton h-8 w-20 rounded-lg" /><div className="skeleton h-2 w-16 rounded mt-3" /></div>)}
+                    </div>
+                    <div className="bento-card !rounded-2xl overflow-hidden"><div className="skeleton h-[600px] w-full" /></div>
+                </>
+            ) : !data || !twitchUserId ? (
+                <p className="text-zinc-400 text-sm">Could not load loyalty data. Try refreshing the page.</p>
+            ) : (
+                <>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <StatTile label="Current Rank" value={data.profile.level.toString()} />
+                        <StatTile label="Season XP" value={data.profile.seasonXp.toLocaleString()} />
+                        <StatTile label="Skill Points" value={data.profile.skillPoints.toString()} />
+                        <StatTile label="Points" value={data.profile.points.toLocaleString()} />
+                    </div>
 
-            {/* Stats Header */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <StatCard title="Current Level" value={data.profile.level.toString()} icon="⚡" />
-                <StatCard title="Season XP" value={data.profile.seasonXp.toLocaleString()} icon="✨" />
-                <StatCard title="Skill Points" value={data.profile.skillPoints.toString()} icon="🔮" highlight />
-                <StatCard title="Points Balance" value={data.profile.points.toLocaleString()} icon="💎" />
-            </div>
-
-            {/* Skill Tree */}
-            <div className="space-y-4">
-                <h2 className="text-xl font-bold text-white">Talent Tree</h2>
-                <SkillTree
-                    tenantId={data.tenantId}
-                    userId={USER_ID}
-                    currentSkillPoints={data.profile.skillPoints}
-                    initialSkills={data.skillTree}
-                    initialUnlocked={data.profile.unlockedSkills.map((s: any) => s.skillNodeId)}
-                    onSkillUnlock={handleUnlock}
-                />
-            </div>
-        </div>
-    );
-}
-
-function StatCard({ title, value, icon, highlight = false }: { title: string, value: string, icon: string, highlight?: boolean }) {
-    return (
-        <Card className={`bg-surface-base border-white/[0.05] ${highlight ? 'border-brand-primary/50 bg-brand-primary/5' : ''}`}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-zinc-400 font-bold uppercase tracking-wider">
-                    {title}
-                </CardTitle>
-                <div className="text-2xl opacity-50">{icon}</div>
-            </CardHeader>
-            <CardContent>
-                <div className={`text-2xl font-black ${highlight ? 'text-brand-primary' : 'text-white'}`}>{value}</div>
-            </CardContent>
-        </Card>
+                    <div className="space-y-4">
+                        <SectionLabel>
+                            <span className="inline-flex items-center gap-2"><Sparkles className="w-3 h-3 text-brand-primary" /> Skill Tree — unlock abilities for your community</span>
+                        </SectionLabel>
+                        <div className="bento-card !rounded-2xl overflow-hidden">
+                            <SkillTree
+                                tenantId={data.tenantId}
+                                userId={twitchUserId}
+                                currentSkillPoints={data.profile.skillPoints}
+                                initialSkills={data.skillTree}
+                                initialUnlocked={data.profile.unlockedSkills.map((s) => s.skillNodeId)}
+                                onSkillUnlock={handleUnlock}
+                            />
+                        </div>
+                    </div>
+                </>
+            )}
+        </FeaturePage>
     );
 }

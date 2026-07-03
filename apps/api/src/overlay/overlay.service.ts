@@ -28,7 +28,7 @@ export class OverlayService {
                 width: data.width || 1920,
                 height: data.height || 1080,
                 urlSlug,
-                config: {},
+                config: JSON.stringify({}),
             },
             include: {
                 widgets: true,
@@ -120,7 +120,10 @@ export class OverlayService {
 
         const overlay = await this.prisma.overlay.update({
             where: { id },
-            data,
+            data: {
+                ...data,
+                config: data.config ? JSON.stringify(data.config) : undefined,
+            },
             include: {
                 widgets: {
                     orderBy: { zIndex: 'asc' },

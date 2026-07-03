@@ -3,6 +3,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { ChatHandlerService } from './chat-handler.service';
 import { SecurityService } from '../common/security/security.service';
 import * as tmi from 'tmi.js';
+import { OverlayEventsGateway } from '../overlay/overlay-events.gateway';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -17,6 +18,7 @@ export class BotManagerService implements OnModuleInit {
         private prisma: PrismaService,
         private chatHandler: ChatHandlerService,
         private security: SecurityService,
+        private overlayEvents: OverlayEventsGateway,
     ) { }
 
     getClient(botUsername: string = 'global'): tmi.Client | undefined {
@@ -36,7 +38,7 @@ export class BotManagerService implements OnModuleInit {
         });
         this.logger.log(`Initializing Bot Manager with ${tenants.length} connected tenants: ${tenants.map(t => t.name).join(', ')}`);
 
-        const globalBotUsername = process.env.GLOBAL_BOT_USERNAME || 'streamrealmbot';
+        const globalBotUsername = process.env.GLOBAL_BOT_USERNAME || 'streampulsebot';
         const globalBotToken = process.env.GLOBAL_BOT_TOKEN;
 
         // Group channels by their handling bot identity
@@ -111,9 +113,38 @@ export class BotManagerService implements OnModuleInit {
                 client.on('join', (ch, user, self) => {
                     this.logger.log(`[EVENT:join] ${user} joined ${ch} (self: ${self})`);
                     if (self && client) {
-                        // client.say(ch, "StreamRealm Bot joined successfully!").catch(e => this.logger.error(`SAY FAIL in ${ch}`, e));
+                        // client.say(ch, "StreamPulse Bot joined successfully!").catch(e => this.logger.error(`SAY FAIL in ${ch}`, e));
                     }
                 });
+
+                // --- ALERTS BRIDGE ---
+                client.on('subscription', (ch, username, method, message, userstate) => {
+                    this.emitAlertToOverlays(ch, {
+                        type: 'subscribe',
+                        username,
+                        message: message || undefined,
+                        tier: (method as any).plan,
+                    });
+                });
+
+                client.on('resub', (ch, username, months, message, userstate, methods) => {
+                    this.emitAlertToOverlays(ch, {
+                        type: 'subscribe',
+                        username,
+                        message: message || undefined,
+                        tier: (methods as any).plan,
+                    });
+                });
+
+                client.on('subgift', (ch, username, recipient, methods, userstate) => {
+                    this.emitAlertToOverlays(ch, {
+                        type: 'subscribe',
+                        username,
+                        message: `Gifted a sub to ${recipient}`,
+                        tier: (methods as any).plan,
+                    });
+                });
+                // ---------------------
 
                 client.on('notice', (ch, msgid, msg) => {
                     this.logger.warn(`[EVENT:notice] ${ch}: [${msgid}] ${msg}`);
@@ -195,6 +226,31 @@ export class BotManagerService implements OnModuleInit {
             } catch (err) {
                 this.logger.error(`Failed to leave ${channelName}`, err);
             }
+        }
+    }
+
+    private async emitAlertToOverlays(channelName: string, alertData: any) {
+        const channel = channelName.replace('#', '');
+
+        // Find tenant for this channel
+        const tenant = await (this.prisma.tenant as any).findFirst({
+            where: {
+                OR: [
+                    { targetChannel: channel },
+                    { name: channel }
+                ]
+            }
+        });
+
+        if (!tenant) return;
+
+        // Find all public overlays for this tenant
+        const overlays = await this.prisma.overlay.findMany({
+            where: { tenantId: tenant.id, isPublic: true }
+        });
+
+        for (const overlay of overlays) {
+            this.overlayEvents.emitAlert(overlay.id, alertData);
         }
     }
 

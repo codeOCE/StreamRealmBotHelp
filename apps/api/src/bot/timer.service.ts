@@ -110,7 +110,7 @@ export class TimerService implements OnModuleInit {
 
             // Parse variables
             const message = await this.variableService.parse(timer.message, {
-                user: 'StreamRealm',
+                user: 'StreamPulse',
                 userId: 'bot',
                 channel: tenant.name,
                 broadcasterId: tenant.twitchId,

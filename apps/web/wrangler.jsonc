@@ -1,0 +1,24 @@
+{
+  // CreatorCastle web app (Next.js) on Cloudflare Workers via @opennextjs/cloudflare.
+  // The API lives in a SEPARATE worker (creatorcastle-api @ api.creatorcastle.gg);
+  // /api and /auth are proxied there by next.config rewrites.
+  //
+  // Served at app.creatorcastle.gg. The apex (creatorcastle.gg) stays on the
+  // separate coming-soon Pages deploy — different hostname, no conflict.
+  "name": "creatorcastle-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-05-08",
+  // global_fetch_strictly_public: so rewrites/fetch to api.creatorcastle.gg go
+  // out to the public edge (hitting the API worker) instead of looping back.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "routes": [
+    { "pattern": "app.creatorcastle.gg", "custom_domain": true, "zone_name": "creatorcastle.gg" }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

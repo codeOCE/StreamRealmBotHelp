@@ -17,7 +17,7 @@ async function main() {
             data: {
                 tenantId: tenant.id,
                 trigger: '!testdbupdate',
-                responses: ['test'],
+                responses: JSON.stringify(['test']),
                 userCooldown: 10,
                 isRegex: false
             }

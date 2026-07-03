@@ -9,6 +9,8 @@ import { VariableService } from './variable.service';
 import { AuditService } from './audit.service';
 import { TimerService } from './timer.service';
 import { BattleService } from './battle.service';
+import { SongRequestService } from './song-request.service';
+import { OverlayEventsGateway } from '../overlay/overlay-events.gateway';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as tmi from 'tmi.js';
 
@@ -31,6 +33,8 @@ export class ChatHandlerService {
         private auditService: AuditService,
         private eventEmitter: EventEmitter2,
         private battleService: BattleService,
+        private overlayEvents: OverlayEventsGateway,
+        private songRequestService: SongRequestService,
     ) { }
 
     async handleMessage(channelName: string, userstate: tmi.ChatUserstate, message: string, client: tmi.Client) {
@@ -105,6 +109,28 @@ export class ChatHandlerService {
         // 5. Logging (Non-blocking)
         this.logChat(tenantId, userstate, message)
             .catch(err => this.logger.error(`[MSG] Chat logging failed`, err));
+
+        // 6. Overlay Update (Non-blocking)
+        this.emitToOverlays(tenantId, userstate, message)
+            .catch(err => this.logger.error(`[MSG] Overlay emit failed`, err));
+    }
+
+    private async emitToOverlays(tenantId: string, userstate: tmi.ChatUserstate, message: string) {
+        const overlays = await this.prisma.overlay.findMany({
+            where: { tenantId }
+        });
+
+        for (const overlay of overlays) {
+            this.overlayEvents.emitChatMessage(overlay.id, {
+                username: userstate['display-name'] || userstate.username!,
+                message,
+                color: userstate.color,
+                // Send badge set + version (e.g. subscriber/12) so the overlay can load the real image.
+                badges: Object.entries(userstate.badges || {}).map(([setId, version]) => ({ setId, version: String(version) })),
+                roomId: userstate['room-id'],
+                emotes: userstate.emotes,
+            });
+        }
     }
 
     private async handleCommand(tenant: any, message: string, userstate: tmi.ChatUserstate, channelName: string): Promise<boolean> {
@@ -156,15 +182,18 @@ export class ChatHandlerService {
                     data: { usages: { increment: 1 } }
                 });
 
-                const resData = (command as any).responses;
+                const resDataRaw = (command as any).responses;
 
                 let responses: string[] = [];
-                if (Array.isArray(resData)) {
-                    responses = resData;
-                } else if (typeof resData === 'string') {
-                    responses = [resData];
-                } else if (resData && typeof resData === 'object' && (resData as any).items) {
-                    responses = (resData as any).items;
+                try {
+                    if (typeof resDataRaw === 'string') {
+                        const parsed = JSON.parse(resDataRaw);
+                        responses = Array.isArray(parsed) ? parsed : [resDataRaw];
+                    } else if (Array.isArray(resDataRaw)) {
+                        responses = resDataRaw;
+                    }
+                } catch (e) {
+                    responses = [resDataRaw];
                 }
 
                 const context = {
@@ -492,7 +521,7 @@ export class ChatHandlerService {
             }
 
             case 'ping':
-                await this.rateLimiter.enqueueMessage(channelName, `Pong! StreamRealm Bot is online and operational. [Uptime: ${this.getUptime()}]`, broadcasterId, tenant.botUsername || 'global');
+                await this.rateLimiter.enqueueMessage(channelName, `Pong! StreamPulse Bot is online and operational. [Uptime: ${this.getUptime()}]`, broadcasterId, tenant.botUsername || 'global');
                 break;
 
             case 'shoutout':
@@ -662,7 +691,7 @@ export class ChatHandlerService {
                             data: {
                                 tenantId,
                                 trigger: newTrigger,
-                                responses: [normalizedResponse],
+                                responses: JSON.stringify([normalizedResponse]),
                                 enabled: true,
                                 isBuiltIn: false,
                                 userLevel: 'VIEWER',
@@ -715,7 +744,7 @@ export class ChatHandlerService {
                         if (cmd) {
                             await this.prisma.command.update({
                                 where: { id: cmd.id },
-                                data: { responses: [normalizedResponse] }
+                                data: { responses: JSON.stringify([normalizedResponse]) }
                             });
                             this.botEvents.emitCommandUpdate(tenantId);
                             await this.auditService.log({
@@ -732,6 +761,51 @@ export class ChatHandlerService {
                     }
                 }
                 break;
+
+            case 'sr':
+            case 'songrequest': {
+                // Check if Channel Points Only mode is enabled
+                let settings: any = {};
+                try {
+                    settings = typeof tenant.settings === 'string' ? JSON.parse(tenant.settings) : (tenant.settings || {});
+                } catch (e) { }
+
+                if (settings.songRequestMode === 'points_only') {
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, song requests are currently only allowed via Channel Point redemptions.`, broadcasterId, tenant.botUsername || 'global');
+                    break;
+                }
+
+                const query = args.join(' ');
+                if (!query) {
+                    await this.rateLimiter.enqueueMessage(channelName, `${username}, usage: !sr <song name / artist>`, broadcasterId, tenant.botUsername || 'global');
+                    break;
+                }
+                const result = await this.songRequestService.requestSong(tenantId, userId, username, query);
+                await this.rateLimiter.enqueueMessage(channelName, result.message, broadcasterId, tenant.botUsername || 'global');
+                break;
+            }
+
+            case 'skip':
+                if (this.hasPermission(userstate, 'MODERATOR')) {
+                    const success = await this.songRequestService.skipSong(tenantId);
+                    if (success) {
+                        await this.rateLimiter.enqueueMessage(channelName, `Skipping current song...`, broadcasterId, tenant.botUsername || 'global');
+                    } else {
+                        await this.rateLimiter.enqueueMessage(channelName, `Failed to skip. Is Spotify playing?`, broadcasterId, tenant.botUsername || 'global');
+                    }
+                }
+                break;
+
+            case 'queue': {
+                const queue = await this.songRequestService.getQueue(tenantId);
+                if (queue.length === 0) {
+                    await this.rateLimiter.enqueueMessage(channelName, `The queue is currently empty.`, broadcasterId, tenant.botUsername || 'global');
+                } else {
+                    const queueStr = queue.map((s, i) => `${i + 1}. ${s.songTitle}`).join(' | ');
+                    await this.rateLimiter.enqueueMessage(channelName, `Current Queue: ${queueStr}`, broadcasterId, tenant.botUsername || 'global');
+                }
+                break;
+            }
 
             default:
                 return false;

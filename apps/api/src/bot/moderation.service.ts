@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { VariableService } from './variable.service';
 import { AuditService } from './audit.service';
-import { UserLevel } from '@prisma/client';
+import { UserLevel } from '../common/enums';
 import * as tmi from 'tmi.js';
 
 @Injectable()

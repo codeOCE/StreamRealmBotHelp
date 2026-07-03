@@ -6,22 +6,23 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=api\" \"npm run dev --workspace=web\"",
+    "predev": "node scripts/free-dev-port.mjs 8787 3002",
+    "dev": "node scripts/dev.mjs",
+    "dev:worker": "npm run dev --workspace=@stream-realm/worker",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
-    "db:setup": "npm run generate --workspace=@stream-realm/database && npm run db:push --workspace=@stream-realm/database"
+    "docker:down": "docker compose down"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "wait-on": "^9.0.4"
   },
   "dependencies": {
-    "nanoid": "^3.3.7",
-    "socket.io-client": "^4.8.3"
+    "nanoid": "^3.3.7"
   }
 }

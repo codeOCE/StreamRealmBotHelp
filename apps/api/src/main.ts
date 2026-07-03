@@ -12,7 +12,13 @@ async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
     app.set('trust proxy', 1);
 
-
+    // Debug Middleware - AT THE VERY TOP
+    app.use((req: Request, res: Response, next: Function) => {
+      if (req.path.startsWith('/socket.io') || req.path.includes('overlay')) {
+        console.log(`[DEBUG_GATE] ${req.method} ${req.path}${Object.keys(req.query).length ? '?' + new URLSearchParams(req.query as any).toString() : ''}`);
+      }
+      next();
+    });
 
     app.use(
       session({
@@ -22,7 +28,7 @@ async function bootstrap() {
         saveUninitialized: false,
         proxy: true, // Crucial for trusting the Next.js proxy
         cookie: {
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+          maxAge: 365 * 24 * 60 * 60 * 1000,
           secure: false, // FORCE FALSE FOR LOCAL DEV
           httpOnly: true,
           sameSite: 'lax', // 'lax' allows cookies to be sent on top-level redirects

@@ -1,0 +1,47 @@
+/* CreatorCastle Cosmetics — styles injected into Twitch chat. */
+
+/* Our badge group. Kept as the leading badge by the content script so it sits
+   ahead of any 7TV / BTTV / FFZ badges. */
+.cc-badges {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+/* Badge inserted before a username. */
+.cc-badge {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 3px;
+  vertical-align: middle;
+  object-fit: contain;
+  border-radius: 3px;
+}
+
+/* Paint base: the gradient itself is set inline (with !important, so it beats a
+   7TV stylesheet paint in the cascade); these rules make the text-clip reliable
+   and keep the painted name layered above sibling decorations. */
+.cc-paint {
+  background-repeat: no-repeat;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+}
+
+/* Paint animations (match apps/web/lib/paint.ts). */
+@keyframes cc-paint-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes cc-paint-sheen {
+  0%, 60% { background-position: -50% 50%; }
+  100% { background-position: 150% 50%; }
+}
+@keyframes cc-paint-rainbow {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+.cc-paint--shimmer { animation: cc-paint-shimmer 4s linear infinite; }
+.cc-paint--sheen { animation: cc-paint-sheen 3.5s ease-in-out infinite; }
+.cc-paint--rainbow { animation: cc-paint-rainbow 6s linear infinite; }

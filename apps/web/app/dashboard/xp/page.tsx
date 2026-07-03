@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '@/lib/api';
 
 interface Viewer {
     id: string;
@@ -12,22 +13,35 @@ interface Viewer {
     lastActive: string;
 }
 
+interface LoyaltySettings {
+    enabled: boolean;
+    pointsPerInterval: number;
+    intervalMinutes: number;
+    subMultiplier: number;
+    currencyName: string;
+}
+
 export default function XPPage() {
     const [viewers, setViewers] = useState<Viewer[]>([]);
-    const [settings, setSettings] = useState<any>(null);
+    const [settings, setSettings] = useState<LoyaltySettings | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [streamerId, setStreamerId] = useState('');
+    const [copied, setCopied] = useState(false);
 
-    const API_BASE = '/api/loyalty';
+    const API_BASE = apiUrl('/api/loyalty');
 
     const fetchData = async () => {
         try {
             setIsLoading(true);
-            const [lbRes, setRes] = await Promise.all([
+            const [lbRes, setRes, meRes] = await Promise.all([
                 fetch(`${API_BASE}/leaderboard`, { credentials: 'include' }),
-                fetch(`${API_BASE}/settings`, { credentials: 'include' })
+                fetch(`${API_BASE}/settings`, { credentials: 'include' }),
+                fetch(apiUrl('/api/user/me'), { credentials: 'include' }),
             ]);
             const lbData = await lbRes.json();
             const setData = await setRes.json();
+            const me = await meRes.json().catch(() => ({}));
+            setStreamerId(me?.tenantId ?? me?.id ?? '');
 
             setViewers(lbData.map((v: any, i: number) => ({
                 id: v.id,
@@ -46,11 +60,10 @@ export default function XPPage() {
         }
     };
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+    useEffect(() => { fetchData(); }, []);
 
     const updateLoyaltySetting = async (key: string, value: any) => {
+        if (!settings) return;
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
         try {
@@ -65,121 +78,191 @@ export default function XPPage() {
         }
     };
 
+    const rankDisplay = (rank: number) => {
+        if (rank === 1) return <span className="inline-flex w-6 h-6 rounded-full bg-yellow-400/20 border border-yellow-400/40 items-center justify-center text-[9px] font-black text-yellow-400">1</span>;
+        if (rank === 2) return <span className="inline-flex w-6 h-6 rounded-full bg-zinc-400/20 border border-zinc-400/40 items-center justify-center text-[9px] font-black text-zinc-300">2</span>;
+        if (rank === 3) return <span className="inline-flex w-6 h-6 rounded-full bg-orange-400/20 border border-orange-400/40 items-center justify-center text-[9px] font-black text-orange-400">3</span>;
+        return <span className="text-zinc-700 tabular-nums">#{rank}</span>;
+    };
+
     return (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-4xl font-extrabold tracking-tight text-white">Loyalty & Rewards</h1>
-                <p className="text-zinc-500 text-base font-medium max-w-2xl">Manage viewer experience points and automated currency distribution to reward your most active members.</p>
+        <div className="space-y-8">
+            {/* Header */}
+            <div>
+                <h1 className="text-3xl font-black tracking-tight text-white font-heading">Leaderboard</h1>
+                <p className="text-brand-muted text-sm font-medium mt-1">Track your community's XP and loyalty progress.</p>
             </div>
 
-            {/* Loyalty Configuration */}
+            {/* Summary stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="stat-card">
+                    <p className="text-[10px] font-black text-zinc-600  mb-3">Total XP</p>
+                    <p className="text-2xl font-black text-white tabular-nums tracking-tight">
+                        {viewers.reduce((acc, v) => acc + v.xp, 0).toLocaleString()}
+                    </p>
+                </div>
+                <div className="stat-card">
+                    <p className="text-[10px] font-black text-zinc-600  mb-3">Active Viewers</p>
+                    <p className="text-2xl font-black text-white tabular-nums tracking-tight">{viewers.length}</p>
+                </div>
+                <div className="stat-card border-brand-primary/20 relative overflow-hidden">
+                    <div className="absolute -right-2 -top-2 w-16 h-16 bg-brand-primary/10 blur-2xl rounded-full" />
+                    <p className="text-[10px] font-black text-brand-primary  mb-3">Top Level</p>
+                    <p className="text-2xl font-black text-white tracking-tight">
+                        Level <span className="text-brand-primary">{viewers.length > 0 ? Math.max(...viewers.map(v => v.level)) : 1}</span>
+                    </p>
+                </div>
+            </div>
+
+            {/* Public leaderboard share link */}
+            {streamerId && (
+                <div className="glass-card rounded-2xl p-4 border border-white/5 flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-black  text-zinc-400">Public leaderboard link</p>
+                        <p className="text-xs text-zinc-500 truncate">Share so viewers can see the rankings and brag about their points</p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            navigator.clipboard?.writeText(`${window.location.origin}/leaderboard/${streamerId}`);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 1500);
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase bg-brand-primary/15 text-brand-primary border border-brand-primary/20 hover:bg-brand-primary/25 transition-colors shrink-0"
+                    >
+                        {copied ? 'Copied' : 'Copy'}
+                    </button>
+                </div>
+            )}
+
+            {/* Settings */}
             {settings && (
-                <div className="glass-card rounded-4xl p-10 space-y-10 relative overflow-hidden border border-white/[0.08]">
-                    <div className="flex items-center justify-between border-b border-white/[0.05] pb-10 relative z-10 w-full">
-                        <div className="flex flex-col gap-1">
-                            <h3 className="text-2xl font-bold text-white">Reward Configuration</h3>
-                            <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-[0.3em]">Automated Distribution Engine</p>
+                <div className="glass-card rounded-2xl p-6 space-y-6">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-5">
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-tight font-heading">Loyalty Settings</h3>
+                            <p className="text-[10px] font-black text-zinc-600  mt-1">Configure XP and point rewards</p>
                         </div>
                         <button
                             onClick={() => updateLoyaltySetting('enabled', !settings.enabled)}
-                            className={`w-14 h-7 rounded-full relative transition-all duration-500 border border-white/[0.05] ${settings.enabled ? 'bg-brand-primary shadow-premium' : 'bg-surface-bright'}`}
-                        >
-                            <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all duration-500 shadow-xl ${settings.enabled ? 'left-8' : 'left-1'}`} />
-                        </button>
+                            className={`saas-toggle ${settings.enabled ? 'on' : ''}`}
+                            aria-label="Toggle loyalty"
+                        />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10">
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-1">Points Per Interval</label>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-zinc-500  block">Currency Name</label>
+                            <input
+                                type="text"
+                                value={settings.currencyName}
+                                maxLength={24}
+                                onChange={(e) => setSettings({ ...settings, currencyName: e.target.value })}
+                                onBlur={(e) => updateLoyaltySetting('currencyName', e.target.value || 'Points')}
+                                className="void-input"
+                                placeholder="Points"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-zinc-500  block">Points per Interval</label>
                             <input
                                 type="number"
                                 value={settings.pointsPerInterval}
                                 onChange={(e) => updateLoyaltySetting('pointsPerInterval', Number(e.target.value))}
-                                className="w-full bg-black/40 border border-white/[0.05] rounded-2xl px-6 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all font-bold shadow-premium"
+                                className="void-input"
                             />
                         </div>
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-1">Interval (Minutes)</label>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-zinc-500  block">Interval (Minutes)</label>
                             <input
                                 type="number"
                                 value={settings.intervalMinutes}
                                 onChange={(e) => updateLoyaltySetting('intervalMinutes', Number(e.target.value))}
-                                className="w-full bg-black/40 border border-white/[0.05] rounded-2xl px-6 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all font-bold shadow-premium"
+                                className="void-input"
                             />
                         </div>
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-1">Subscriber Boost</label>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-zinc-500  block">Subscriber Multiplier</label>
                             <input
                                 type="number"
                                 step="0.5"
                                 value={settings.subMultiplier}
                                 onChange={(e) => updateLoyaltySetting('subMultiplier', Number(e.target.value))}
-                                className="w-full bg-black/40 border border-white/[0.05] rounded-2xl px-6 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all font-bold shadow-premium"
+                                className="void-input"
                             />
                         </div>
                     </div>
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="glass-card rounded-4xl p-10 group border border-white/[0.08] hover:border-brand-primary/20 transition-all duration-500">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-6">Community Total XP</p>
-                    <p className="text-4xl font-extrabold tracking-tight text-white group-hover:text-brand-primary transition-colors">
-                        {viewers.reduce((acc: number, v: Viewer) => acc + v.xp, 0).toLocaleString()}
-                    </p>
+            {/* Leaderboard table */}
+            <div className="glass-card rounded-2xl overflow-hidden">
+                <div className="px-6 py-5 border-b border-white/5 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-black text-white uppercase tracking-tight font-heading">Leaderboard</h3>
+                        <p className="text-[10px] font-black text-zinc-600 ">Community rankings</p>
+                    </div>
                 </div>
-                <div className="glass-card rounded-4xl p-10 group border border-white/[0.08] hover:border-brand-primary/20 transition-all duration-500">
-                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-6">Active Members</p>
-                    <p className="text-4xl font-extrabold tracking-tight text-white group-hover:text-brand-primary transition-colors">{viewers.length}</p>
-                </div>
-                <div className="glass-card rounded-4xl p-10 group border-brand-primary/20 relative overflow-hidden bg-brand-primary/[0.02]">
-                    <div className="absolute top-0 right-0 p-8 opacity-5 text-8xl pointer-events-none">⭐</div>
-                    <p className="text-[10px] font-bold text-brand-primary uppercase tracking-[0.2em] mb-6">Peak Level reached</p>
-                    <p className="text-4xl font-extrabold tracking-tight text-brand-primary">
-                        Lv. {viewers.length > 0 ? Math.max(...viewers.map(v => v.level)) : 1}
-                    </p>
-                </div>
-            </div>
 
-            <div className="glass-card rounded-4xl overflow-hidden border border-white/[0.08]">
-                <div className="px-10 py-8 border-b border-white/[0.05] bg-white/[0.02] flex items-center justify-between">
-                    <h3 className="font-bold text-xl tracking-tight text-white">Global Leaderboard</h3>
-                </div>
                 {isLoading ? (
-                    <div className="p-32 text-center text-zinc-600 animate-pulse font-bold uppercase tracking-[0.4em] text-[10px]">Fetching Community Ranks...</div>
+                    <div className="p-6 space-y-3">
+                        {[0,1,2,3,4].map(i => (
+                            <div key={i} className="flex items-center gap-4 px-2 py-2">
+                                <div className="skeleton w-8 h-5 rounded-lg shrink-0" />
+                                <div className="skeleton h-4 w-32 rounded-lg" />
+                                <div className="skeleton h-5 w-14 rounded-lg" />
+                                <div className="skeleton h-4 w-16 rounded-lg ml-auto" />
+                                <div className="skeleton h-4 w-16 rounded-lg" />
+                            </div>
+                        ))}
+                    </div>
+                ) : viewers.length === 0 ? (
+                    <div className="py-20 text-center text-zinc-700 font-black text-[10px] ">
+                        No viewers yet. Start streaming to build your leaderboard.
+                    </div>
                 ) : (
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/[0.02]">
-                                <th className="px-10 py-6 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] border-b border-white/[0.05]">Rank</th>
-                                <th className="px-10 py-6 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] border-b border-white/[0.05]">Member</th>
-                                <th className="px-10 py-6 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] border-b border-white/[0.05]">Level</th>
-                                <th className="px-10 py-6 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] border-b border-white/[0.05]">Experience</th>
-                                <th className="px-10 py-6 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] border-b border-white/[0.05]">Currency</th>
-                                <th className="px-10 py-6 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] border-b border-white/[0.05] text-right">Last Active</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/[0.05]">
-                            {viewers.map((viewer) => (
-                                <tr key={viewer.id} className="hover:bg-white/[0.02] transition-all duration-300 group">
-                                    <td className="px-10 py-8 font-extrabold text-sm text-zinc-500">
-                                        {viewer.rank === 1 ? '🥇' : viewer.rank === 2 ? '🥈' : viewer.rank === 3 ? '🥉' : `#${viewer.rank}`}
-                                    </td>
-                                    <td className="px-10 py-8">
-                                        <span className="font-extrabold text-white group-hover:text-brand-primary transition-colors text-base tracking-tight">{viewer.username}</span>
-                                    </td>
-                                    <td className="px-10 py-8">
-                                        <span className="text-[10px] font-extrabold text-brand-primary bg-brand-primary/5 px-3 py-1.5 rounded-full border border-brand-primary/10 shadow-premium uppercase tracking-widest">LVL {viewer.level}</span>
-                                    </td>
-                                    <td className="px-10 py-8 text-sm font-bold text-zinc-400">{viewer.xp.toLocaleString()} <span className="text-[9px] uppercase tracking-widest text-zinc-600 ml-1">XP</span></td>
-                                    <td className="px-10 py-8 text-base font-extrabold text-brand-primary">{viewer.points.toLocaleString()} <span className="text-[9px] uppercase tracking-widest text-brand-primary/50 ml-1">SR</span></td>
-                                    <td className="px-10 py-8 text-right text-[10px] font-bold text-zinc-600 uppercase tracking-widest leading-relaxed">
-                                        {viewer.lastActive}
-                                    </td>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[700px]">
+                            <thead>
+                                <tr className="border-b border-white/[0.04]">
+                                    <th className="px-6 py-4 text-[10px] font-black text-zinc-600  w-16">Rank</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-zinc-600 ">Viewer</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-zinc-600 ">Level</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-zinc-600 ">XP</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-zinc-600 ">{settings?.currencyName || 'Points'}</th>
+                                    <th className="px-6 py-4 text-[10px] font-black text-zinc-600  text-right">Last Active</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-white/[0.03]">
+                                {viewers.map((viewer) => (
+                                    <tr key={viewer.id} className="hover:bg-white/[0.02] transition-colors duration-150 group/row">
+                                        <td className="px-6 py-4 font-black text-sm text-center">
+                                            {rankDisplay(viewer.rank)}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-black text-white text-sm group-hover/row:text-brand-primary transition-colors">
+                                                {viewer.username}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="void-badge void-badge-blue">Lvl {viewer.level}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-black text-zinc-500 tabular-nums">
+                                            {viewer.xp.toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm font-black text-brand-primary tabular-nums">
+                                            {viewer.points.toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 text-right text-[10px] font-black text-zinc-700 ">
+                                            {viewer.lastActive}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </div>

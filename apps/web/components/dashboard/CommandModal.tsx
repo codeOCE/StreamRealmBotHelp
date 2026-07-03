@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { VoidNumberInput } from './VoidNumberInput';
+import { VoidSelect } from './VoidSelect';
+import { parseResponsesJson, splitResponseList } from '@/lib/split-responses';
 
 interface Command {
     id: string;
     trigger: string;
     responses: string[];
     responseType: 'SAY' | 'MENTION' | 'REPLY' | 'WHISPER';
+    responseMode?: 'ALL' | 'RANDOM';
     aliases?: string[];
     usages?: number;
     userLevel: string;
@@ -20,19 +24,31 @@ interface Command {
 }
 
 const CATEGORIES = [
-    { value: 'General', label: 'General', description: 'Basic commands and common interactions.' },
-    { value: 'Moderation', label: 'Moderation', description: 'Tools for channel management and security.' },
-    { value: 'Streaming', label: 'Streaming', description: 'Live stream status and metadata.' },
-    { value: 'Loyalty', label: 'Loyalty', description: 'Viewer engagement and progress systems.' },
-    { value: 'Utility', label: 'Utility', description: 'Technical links and list features.' },
+    { value: 'General',    label: 'General',    description: 'Basic commands and common interactions.' },
+    { value: 'Moderation', label: 'Moderation', description: 'Tools for channel management and safety.' },
+    { value: 'Streaming',  label: 'Streaming',  description: 'Live stream status and metadata.' },
+    { value: 'Loyalty',    label: 'Loyalty',    description: 'Viewer engagement and progress systems.' },
+    { value: 'Utility',    label: 'Utility',    description: 'Technical links and utilities.' },
 ];
 
 const RESPONSE_TYPES = [
-    { value: 'SAY', label: 'Say', description: 'Prints the message normally (no targeting of user).' },
-    { value: 'MENTION', label: 'Mention', description: 'Mentions the user in message (ie @<user>).' },
-    { value: 'REPLY', label: 'Reply', description: 'Replies to the user in chat.' },
-    { value: 'WHISPER', label: 'Whisper', description: 'Send the user a direct message.' },
+    { value: 'SAY',     label: 'Say',     description: 'Posts the message normally in chat.' },
+    { value: 'MENTION', label: 'Mention', description: 'Mentions the user who triggered the command.' },
+    { value: 'REPLY',   label: 'Reply',   description: 'Replies directly to the user in chat.' },
+    { value: 'WHISPER', label: 'Whisper', description: 'Sends the user a private message.' },
 ] as const;
+
+const RESPONSE_MODES = [
+    { value: 'ALL', label: 'Say all', description: 'Posts every response in order (up to 3 chat lines).' },
+    { value: 'RANDOM', label: 'Random', description: 'Picks one response at random each time.' },
+] as const;
+
+const USER_LEVELS = [
+    { value: 'VIEWER',      label: 'Everyone' },
+    { value: 'SUBSCRIBER',  label: 'Subscribers' },
+    { value: 'MODERATOR',   label: 'Moderators' },
+    { value: 'BROADCASTER', label: 'Broadcaster only' },
+];
 
 interface CommandModalProps {
     isOpen: boolean;
@@ -49,11 +65,13 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
     const [cooldown, setCooldown] = useState(30);
     const [userCooldown, setUserCooldown] = useState(10);
     const [responseType, setResponseType] = useState<'SAY' | 'MENTION' | 'REPLY' | 'WHISPER'>('SAY');
+    const [responseMode, setResponseMode] = useState<'ALL' | 'RANDOM'>('ALL');
+    const [showBulkImport, setShowBulkImport] = useState(false);
+    const [bulkText, setBulkText] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('General');
     const [isRegex, setIsRegex] = useState(false);
-    const [isResponseDropdownOpen, setIsResponseDropdownOpen] = useState(false);
-    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -63,7 +81,9 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
             setAliases(Array.isArray(initialData.aliases) ? initialData.aliases : []);
             setUserLevel(initialData.userLevel);
             setCooldown(initialData.cooldown);
-            setUserCooldown(initialData.userCooldown || 0); setResponseType((initialData as any).responseType || 'SAY');
+            setUserCooldown(initialData.userCooldown || 0);
+            setResponseType((initialData as any).responseType || 'SAY');
+            setResponseMode(initialData.responseMode === 'RANDOM' ? 'RANDOM' : 'ALL');
             setDescription(initialData.description || '');
             setCategory(initialData.category || 'General');
             setIsRegex(initialData.isRegex || false);
@@ -75,6 +95,9 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
             setCooldown(30);
             setUserCooldown(10);
             setResponseType('SAY');
+            setResponseMode('ALL');
+            setShowBulkImport(false);
+            setBulkText('');
             setDescription('');
             setCategory('General');
             setIsRegex(false);
@@ -84,47 +107,68 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
 
     if (!isOpen) return null;
 
-    const addResponseField = () => {
-        setResponses([...responses, '']);
+    const addResponseField = () => setResponses([...responses, '']);
+    const removeResponseField = (index: number) => {
+        if (responses.length > 1) setResponses(responses.filter((_, i) => i !== index));
+    };
+    const updateResponseField = (index: number, value: string) => {
+        const next = [...responses];
+        next[index] = value;
+        setResponses(next);
+    };
+    const mergeResponses = (items: string[]) => {
+        const merged = [...responses.filter((r) => r.trim()), ...items.map((r) => r.trim()).filter(Boolean)];
+        setResponses(merged.length > 0 ? merged : ['']);
     };
 
-    const removeResponseField = (index: number) => {
-        if (responses.length > 1) {
-            setResponses(responses.filter((_, i) => i !== index));
+    const handleResponsePaste = (index: number, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+        const parts = splitResponseList(e.clipboardData.getData('text/plain'));
+        if (parts.length <= 1) return;
+        e.preventDefault();
+        const next = [...responses];
+        next.splice(index, 1, ...parts);
+        setResponses(next.filter((r) => r.trim()).length > 0 ? next : ['']);
+    };
+
+    const applyBulkText = () => {
+        const parts = splitResponseList(bulkText);
+        if (parts.length === 0) {
+            setError('Paste at least one line to import.');
+            return;
+        }
+        mergeResponses(parts);
+        setBulkText('');
+        setShowBulkImport(false);
+        setError('');
+    };
+
+    const handleJsonUpload = async (file: File) => {
+        try {
+            const text = await file.text();
+            mergeResponses(parseResponsesJson(text));
+            setError('');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not read JSON file.');
+        } finally {
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
-    const updateResponseField = (index: number, value: string) => {
-        const newResponses = [...responses];
-        newResponses[index] = value;
-        setResponses(newResponses);
-    };
+    const nonEmptyResponseCount = responses.filter((r) => r.trim()).length;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const filteredResponses = responses.filter(r => r.trim());
 
-        if (!trigger.trim()) {
-            setError('Trigger is required.');
-            return;
-        }
-
+        if (!trigger.trim()) { setError('Trigger is required.'); return; }
         if (filteredResponses.length === 0 && !initialData?.isBuiltIn) {
-            setError('At least one response is required for custom commands.');
-            return;
+            setError('At least one response is required.'); return;
         }
-
         if (isRegex) {
-            try {
-                new RegExp(trigger);
-            } catch (e) {
-                setError('Invalid regular expression.');
-                return;
-            }
+            try { new RegExp(trigger); } catch { setError('Invalid regular expression.'); return; }
         } else {
             if (!/^[a-zA-Z0-9_-]+$/.test(trigger)) {
-                setError('Trigger can only contain letters, numbers, underscores, and dashes.');
-                return;
+                setError('Trigger can only contain letters, numbers, underscores, and dashes.'); return;
             }
         }
 
@@ -133,7 +177,8 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
             trigger: isRegex ? trigger : trigger.toLowerCase().replace('!', ''),
             responses: filteredResponses,
             responseType,
-            aliases: isRegex ? [] : aliases.map(a => a.toLowerCase().replace('!', '').trim()).filter(a => a),
+            responseMode: filteredResponses.length > 1 ? responseMode : 'ALL',
+            aliases: isRegex ? [] : aliases.map(a => a.toLowerCase().replace('!', '').trim()).filter(Boolean),
             userLevel,
             cooldown,
             userCooldown,
@@ -146,305 +191,319 @@ export default function CommandModal({ isOpen, onClose, onSave, initialData }: C
         onClose();
     };
 
+    const inputClass = "w-full bg-white/[0.03] border border-white/8 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-700 focus:outline-none focus:border-brand-primary/50 focus:bg-white/[0.05] transition-[border-color,background-color] duration-150";
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="glass-card w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-white/[0.05] flex flex-col max-h-[90vh] bg-[#020617]">
+        <div
+            className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-[#050508]/85 backdrop-blur-xl animate-in fade-in duration-200"
+            onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
+            <div className="w-full max-w-2xl bg-surface-base border border-white/8 rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] overflow-hidden">
+
                 {/* Header */}
-                <div className="px-8 py-6 border-b border-white/[0.05] flex justify-between items-center bg-white/[0.01]">
+                <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between shrink-0">
                     <div>
-                        <h2 className="text-xl font-black tracking-tight text-white uppercase">{initialData?.isBuiltIn ? 'Configure' : (initialData ? 'Edit' : 'New')} Command</h2>
-                        <p className="text-[10px] text-zinc-500 mt-1 font-bold uppercase tracking-widest">
-                            {initialData?.isBuiltIn ? 'System Managed Logic' : 'Custom Automated Sequence'}
+                        <h2 className="text-base font-bold text-white tracking-tight">
+                            {initialData?.isBuiltIn ? 'View Command' : initialData ? 'Edit Command' : 'New Command'}
+                        </h2>
+                        <p className="text-xs text-zinc-500 mt-0.5">
+                            {initialData?.isBuiltIn ? 'Built-in command' : 'Custom command'}
                         </p>
                     </div>
-                    <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/[0.03] text-zinc-500 hover:text-white transition-all hover:bg-white/[0.08] border border-white/[0.05]">✕</button>
+                    <button
+                        onClick={onClose}
+                        className="w-11 h-11 flex items-center justify-center rounded-xl text-zinc-500 hover:text-white hover:bg-white/8 transition-colors duration-150 cursor-pointer"
+                        aria-label="Close"
+                    >
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" viewBox="0 0 24 24">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-12">
+                {/* Scrollable body */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {error && (
-                        <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-3">
-                            ⚠️ {error}
+                        <div className="mx-6 mt-5 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium flex items-center gap-3 animate-in slide-in-from-top-2 duration-150">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" className="shrink-0">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            {error}
                         </div>
                     )}
 
-                    <form id="command-form" onSubmit={handleSubmit} className="space-y-12">
-                        {/* Section 1: Identity */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-1 h-3 bg-brand-primary rounded-full" />
-                                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Identity</h3>
-                            </div>
+                    <form id="command-form" onSubmit={handleSubmit} className="p-6 space-y-6">
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Trigger</label>
-                                        <div className="flex items-center gap-2">
+                        {/* ── Trigger & Aliases ── */}
+                        <section className="space-y-4">
+                            <h3 className="text-[10px] font-bold  text-zinc-600">Command</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-semibold text-zinc-400">Trigger</label>
+                                        <label className="flex items-center gap-2 cursor-pointer select-none">
                                             <input
                                                 type="checkbox"
                                                 id="isRegex"
                                                 checked={isRegex}
                                                 onChange={(e) => setIsRegex(e.target.checked)}
-                                                className="w-3 h-3 rounded bg-white/[0.1] border-white/[0.1] checked:bg-brand-primary"
+                                                className="w-3.5 h-3.5 rounded bg-white/5 border border-white/10 checked:bg-brand-primary appearance-none transition-colors cursor-pointer"
                                             />
-                                            <label htmlFor="isRegex" className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider cursor-pointer select-none">Regex Mode</label>
-                                        </div>
+                                            <span className="text-[10px] font-semibold text-zinc-500 ">Regex</span>
+                                        </label>
                                     </div>
-                                    <div className="relative group">
-                                        {!isRegex && <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-primary font-black text-lg">!</span>}
+                                    <div className="relative">
+                                        {!isRegex && (
+                                            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-primary font-bold text-lg leading-none pointer-events-none">!</span>
+                                        )}
                                         <input
                                             autoFocus
                                             type="text"
                                             disabled={initialData?.isBuiltIn}
                                             value={trigger}
                                             onChange={(e) => setTrigger(e.target.value)}
-                                            className={`w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-9 py-4 focus:outline-none focus:border-brand-primary/50 transition-all font-black text-white text-lg tracking-tight placeholder:text-zinc-800 ${initialData?.isBuiltIn ? 'opacity-50 grayscale cursor-not-allowed' : ''} ${isRegex ? 'font-mono text-sm px-5' : ''}`}
-                                            placeholder={isRegex ? "^hello\\s+(world|friend)$" : "hello"}
+                                            className={`${inputClass} ${!isRegex ? 'pl-8' : ''} font-bold text-base tracking-tight disabled:opacity-40 disabled:cursor-not-allowed`}
+                                            placeholder={isRegex ? '^hello\\s+world$' : 'command'}
                                         />
                                     </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Aliases</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-zinc-400 block">Aliases</label>
                                     <input
                                         type="text"
                                         disabled={initialData?.isBuiltIn || isRegex}
                                         value={aliases.join(', ')}
                                         onChange={(e) => setAliases(e.target.value.split(',').map(s => s.trim()))}
-                                        className={`w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-4 focus:outline-none focus:border-brand-primary/30 transition-all text-sm font-bold text-white placeholder:text-zinc-800 ${initialData?.isBuiltIn ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
-                                        placeholder="hi, hey"
+                                        className={`${inputClass} disabled:opacity-40 disabled:cursor-not-allowed`}
+                                        placeholder="alias1, alias2"
                                     />
-                                    {!initialData?.isBuiltIn && <p className="text-[8px] text-zinc-600 font-bold uppercase">Comma separated</p>}
+                                    {!initialData?.isBuiltIn && (
+                                        <p className="text-[10px] text-zinc-700 pl-1">Comma separated</p>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Internal Description</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-zinc-400 block">Description</label>
                                     <input
                                         type="text"
                                         value={description}
                                         onChange={(e) => setDescription(e.target.value)}
-                                        className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-3 focus:outline-none focus:border-brand-primary/30 transition-all text-xs font-bold text-white placeholder:text-zinc-800"
-                                        placeholder="What does this command do?"
+                                        className={inputClass}
+                                        placeholder="Optional internal note..."
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Category Section</label>
-                                    <div className="relative">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-zinc-400 block">Category</label>
+                                    <VoidSelect
+                                        value={category}
+                                        onChange={(e) => setCategory(e.target.value)}
+                                    >
+                                        {CATEGORIES.map((cat) => (
+                                            <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                        ))}
+                                    </VoidSelect>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* ── Response Type ── */}
+                        <section className="space-y-3">
+                            <h3 className="text-[10px] font-bold  text-zinc-600">Response Type</h3>
+                            <div className="space-y-1.5">
+                                <VoidSelect
+                                    value={responseType}
+                                    onChange={(e) => setResponseType(e.target.value as typeof responseType)}
+                                >
+                                    {RESPONSE_TYPES.map((type) => (
+                                        <option key={type.value} value={type.value}>{type.label}</option>
+                                    ))}
+                                </VoidSelect>
+                                <p className="text-[11px] text-zinc-500 pl-1">
+                                    {RESPONSE_TYPES.find((r) => r.value === responseType)?.description}
+                                </p>
+                            </div>
+                        </section>
+
+                        {/* ── Responses ── */}
+                        {!initialData?.isBuiltIn && (
+                            <section className="space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <h3 className="text-[10px] font-bold  text-zinc-600">Responses</h3>
+                                    <div className="flex flex-wrap items-center gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                                            className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-3 focus:outline-none focus:border-brand-primary/30 transition-all text-left flex justify-between items-center group"
+                                            onClick={() => setShowBulkImport((v) => !v)}
+                                            className="text-[11px] font-semibold text-zinc-400 hover:text-white transition-colors duration-150 bg-white/[0.03] hover:bg-white/[0.06] px-3 py-1.5 rounded-lg border border-white/8 cursor-pointer"
                                         >
-                                            <span className="text-xs font-bold text-white">
-                                                {CATEGORIES.find(c => c.value === category)?.label || category}
-                                            </span>
-                                            <div className={`transition-transform duration-200 text-zinc-600 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`}>
-                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </div>
+                                            {showBulkImport ? 'Hide import' : 'Paste list'}
                                         </button>
-
-                                        {isCategoryDropdownOpen && (
-                                            <div className="absolute z-20 w-full mt-1 bg-[#0f172a] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden py-1">
-                                                {CATEGORIES.map((cat) => (
-                                                    <button
-                                                        key={cat.value}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setCategory(cat.value);
-                                                            setIsCategoryDropdownOpen(false);
-                                                        }}
-                                                        className={`w-full px-4 py-2 text-left hover:bg-white/[0.05] transition-all flex flex-col ${category === cat.value ? 'bg-white/[0.03]' : ''}`}
-                                                    >
-                                                        <span className={`text-[10px] font-black ${category === cat.value ? 'text-brand-primary' : 'text-white'}`}>{cat.label}</span>
-                                                        <span className="text-[8px] text-zinc-500 font-bold">{cat.description}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="text-[11px] font-semibold text-zinc-400 hover:text-white transition-colors duration-150 bg-white/[0.03] hover:bg-white/[0.06] px-3 py-1.5 rounded-lg border border-white/8 cursor-pointer"
+                                        >
+                                            Upload JSON
+                                        </button>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept=".json,application/json"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) void handleJsonUpload(file);
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={addResponseField}
+                                            className="text-[11px] font-semibold text-brand-primary hover:text-white transition-colors duration-150 bg-brand-primary/10 hover:bg-brand-primary/20 px-3 py-1.5 rounded-lg border border-brand-primary/20 cursor-pointer"
+                                        >
+                                            + Add Response
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* Section 2: Response Logic */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-1 h-3 bg-brand-primary rounded-full" />
-                                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Response Type</h3>
-                            </div>
-
-                            <div className="relative">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsResponseDropdownOpen(!isResponseDropdownOpen)}
-                                    className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-4 focus:outline-none focus:border-brand-primary/50 transition-all text-left group"
-                                >
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <div className="text-sm font-black text-white">{RESPONSE_TYPES.find(r => r.value === responseType)?.label}</div>
-                                            <div className="text-[10px] text-zinc-500 font-bold mt-0.5">{RESPONSE_TYPES.find(r => r.value === responseType)?.description}</div>
-                                        </div>
-                                        <div className={`transition-transform duration-200 text-zinc-600 ${isResponseDropdownOpen ? 'rotate-180' : ''}`}>
-                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </button>
-
-                                {isResponseDropdownOpen && (
-                                    <div className="absolute z-10 w-full mt-2 bg-[#0a0f1d] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                        {RESPONSE_TYPES.map((type) => (
-                                            <button
-                                                key={type.value}
-                                                type="button"
-                                                onClick={() => {
-                                                    setResponseType(type.value as any);
-                                                    setIsResponseDropdownOpen(false);
-                                                }}
-                                                className={`w-full px-5 py-4 text-left hover:bg-white/[0.05] transition-all flex flex-col gap-0.5 ${responseType === type.value ? 'bg-white/[0.03]' : ''}`}
-                                            >
-                                                <div className={`text-sm font-black ${responseType === type.value ? 'text-brand-primary' : 'text-white'}`}>{type.label}</div>
-                                                <div className="text-[10px] text-zinc-500 font-bold">{type.description}</div>
-                                            </button>
-                                        ))}
+                                {nonEmptyResponseCount > 1 && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-zinc-400 block">Multiple responses</label>
+                                        <VoidSelect
+                                            value={responseMode}
+                                            onChange={(e) => setResponseMode(e.target.value as 'ALL' | 'RANDOM')}
+                                        >
+                                            {RESPONSE_MODES.map((mode) => (
+                                                <option key={mode.value} value={mode.value}>{mode.label}</option>
+                                            ))}
+                                        </VoidSelect>
+                                        <p className="text-[11px] text-zinc-500 pl-1">
+                                            {RESPONSE_MODES.find((m) => m.value === responseMode)?.description}
+                                        </p>
                                     </div>
                                 )}
-                            </div>
-                        </div>
 
-                        {/* Section 3: Messages */}
-                        {!initialData?.isBuiltIn && (
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-1 h-3 bg-brand-primary rounded-full" />
-                                        <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Responses</h3>
+                                {showBulkImport && (
+                                    <div className="space-y-2 rounded-xl border border-white/8 bg-white/[0.02] p-4">
+                                        <p className="text-[11px] text-zinc-500">
+                                            Paste one response per line. Bullets and numbered lists are stripped automatically.
+                                        </p>
+                                        <textarea
+                                            value={bulkText}
+                                            onChange={(e) => setBulkText(e.target.value)}
+                                            className={`${inputClass} min-h-20 py-2 resize-y font-mono text-xs`}
+                                            placeholder={'Line one\nLine two\n- bullet item\n3. numbered item'}
+                                        />
+                                        <div className="flex justify-end gap-2">
+                                            <button type="button" onClick={() => { setShowBulkImport(false); setBulkText(''); }} className="saas-button-secondary !py-2 !px-4 text-xs">
+                                                Cancel
+                                            </button>
+                                            <button type="button" onClick={applyBulkText} className="saas-button !py-2 !px-4 text-xs">
+                                                Add {splitResponseList(bulkText).length || ''} responses
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={addResponseField}
-                                        className="text-[9px] font-black uppercase tracking-widest text-brand-primary hover:text-brand-primary/80 transition-all"
-                                    >
-                                        + Multi-Message
-                                    </button>
-                                </div>
+                                )}
 
-                                <div className="space-y-4">
+                                <p className="text-[10px] text-zinc-700 pl-1">
+                                    Tip: paste a multi-line list into any response field to auto-split.
+                                </p>
+
+                                <div className="space-y-3">
                                     {responses.map((res, index) => (
-                                        <div key={index} className="relative group/field">
+                                        <div key={index} className="relative">
                                             <textarea
                                                 value={res}
                                                 onChange={(e) => updateResponseField(index, e.target.value)}
-                                                className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-4 focus:outline-none focus:border-brand-primary/30 transition-all text-sm min-h-[80px] resize-none font-bold text-white placeholder:text-zinc-800"
-                                                placeholder={`Message ${index + 1}...`}
+                                                onPaste={(e) => handleResponsePaste(index, e)}
+                                                className={`${inputClass} min-h-10 py-2 resize-y ${responses.length > 1 ? 'pr-12' : ''}`}
+                                                placeholder={`Response ${index + 1}...`}
                                             />
                                             {responses.length > 1 && (
                                                 <button
                                                     type="button"
                                                     onClick={() => removeResponseField(index)}
-                                                    className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-500 hover:bg-rose-500/20 transition-all"
+                                                    className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center bg-white/5 hover:bg-rose-500/20 border border-white/8 hover:border-rose-500/30 rounded-lg text-zinc-600 hover:text-rose-400 transition-colors duration-150 cursor-pointer"
+                                                    aria-label="Remove response"
                                                 >
-                                                    ✕
+                                                    <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" viewBox="0 0 24 24">
+                                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                                    </svg>
                                                 </button>
                                             )}
                                         </div>
                                     ))}
-                                    <div className="p-4 rounded-xl border border-white/[0.02] bg-white/[0.01] flex flex-col gap-3">
-                                        <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Available Variables:</span>
-                                        <div className="flex flex-wrap gap-2">
-                                            {['{user}', '{touser}', '{count}', '$(user)', '$(channel)', '$(query)', '$(random.number 1-100)', '$(check.user)', '$(time)', '$(uptime)', '$(game)', '$(title)', '$(fetch url)', '$(math 1+1)', '$(pastebin url)'].map(v => (
-                                                <button
-                                                    key={v}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const activeIndex = responses.length - 1; // Append to last input for now, or use a better insertion logic if possible
-                                                        // Ideally tracking focused input, but simple append works for MVP
-                                                        updateResponseField(activeIndex, responses[activeIndex] + ' ' + v);
-                                                    }}
-                                                    className="text-[9px] text-brand-primary font-black bg-brand-primary/5 px-2 py-1 rounded hover:bg-brand-primary/10 transition-colors"
-                                                >
-                                                    {v}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <p className="text-[9px] text-zinc-600 italic">Click to append to the last message field.</p>
-                                    </div>
+
+                                    <p className="text-[11px] text-zinc-500">
+                                        Need variables?{' '}
+                                        <a
+                                            href="/docs/variables"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-brand-primary hover:text-white font-semibold transition-colors"
+                                        >
+                                            Open variable reference
+                                        </a>
+                                    </p>
                                 </div>
-                            </div>
+                            </section>
                         )}
 
-                        {/* Section 3: Permissions & Limits */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-1 h-3 bg-brand-primary rounded-full" />
-                                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Gatekeeping</h3>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Access Level</label>
-                                    <select
+                        {/* ── Permissions ── */}
+                        <section className="space-y-3">
+                            <h3 className="text-[10px] font-bold  text-zinc-600">Permissions &amp; Cooldowns</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-zinc-400 block">Who can use it</label>
+                                    <VoidSelect
                                         value={userLevel}
                                         onChange={(e) => setUserLevel(e.target.value)}
-                                        className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-4 focus:outline-none focus:border-brand-primary/50 transition-all text-[10px] font-black text-white uppercase tracking-widest appearance-none cursor-pointer"
                                     >
-                                        <option value="VIEWER">Everyone</option>
-                                        <option value="SUBSCRIBER">Subscribers</option>
-                                        <option value="MODERATOR">Moderators</option>
-                                        <option value="BROADCASTER">Broadcaster</option>
-                                    </select>
+                                        {USER_LEVELS.map(l => (
+                                            <option key={l.value} value={l.value}>{l.label}</option>
+                                        ))}
+                                    </VoidSelect>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Global Cooldown</label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            value={cooldown}
-                                            onChange={(e) => setCooldown(parseInt(e.target.value) || 0)}
-                                            className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-4 focus:outline-none focus:border-brand-primary/50 transition-all text-sm font-black text-white"
-                                            min="0"
-                                        />
-                                        <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-zinc-600 uppercase tracking-widest">Sec</span>
-                                    </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-zinc-400 block">Global cooldown</label>
+                                    <VoidNumberInput
+                                        value={cooldown}
+                                        onChange={setCooldown}
+                                        min={0}
+                                        suffix="sec"
+                                    />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500">User Cooldown</label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            value={userCooldown}
-                                            onChange={(e) => setUserCooldown(parseInt(e.target.value) || 0)}
-                                            className="w-full bg-white/[0.02] border border-white/[0.08] rounded-xl px-5 py-4 focus:outline-none focus:border-brand-primary/50 transition-all text-sm font-black text-white"
-                                            min="0"
-                                        />
-                                        <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-zinc-600 uppercase tracking-widest">Sec</span>
-                                    </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-zinc-400 block">Per user cooldown</label>
+                                    <VoidNumberInput
+                                        value={userCooldown}
+                                        onChange={setUserCooldown}
+                                        min={0}
+                                        suffix="sec"
+                                    />
                                 </div>
                             </div>
-                        </div>
+                        </section>
+
                     </form>
                 </div>
 
                 {/* Footer */}
-                <div className="px-8 py-6 border-t border-white/[0.05] flex justify-end gap-3 bg-white/[0.01]">
+                <div className="px-6 py-4 border-t border-white/5 flex justify-end gap-3 shrink-0 bg-white/[0.01]">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-6 py-3 rounded-xl bg-white/[0.03] border border-white/[0.05] text-zinc-500 font-black text-[10px] uppercase tracking-widest hover:bg-white/[0.08] hover:text-white transition-all"
+                        className="saas-button-secondary"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
                         form="command-form"
-                        className="px-8 py-3 bg-brand-primary text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-all shadow-lg shadow-brand-primary/20 active:scale-[0.98]"
+                        className="saas-button"
                     >
-                        {initialData ? 'Apply Changes' : 'Initialize Command'}
+                        {initialData ? 'Save Changes' : 'Create Command'}
                     </button>
                 </div>
             </div>

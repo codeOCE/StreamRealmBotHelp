@@ -33,6 +33,7 @@
     "@nestjs/websockets": "^11.1.13",
     "@stream-realm/database": "^0.0.1",
     "@types/express-session": "^1.18.2",
+    "@types/ws": "^8.18.1",
     "axios": "^1.13.5",
     "bullmq": "^5.69.1",
     "express-session": "^1.19.0",
@@ -44,7 +45,8 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3",
-    "tmi.js": "^1.8.5"
+    "tmi.js": "^1.8.5",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

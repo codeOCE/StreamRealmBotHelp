@@ -111,7 +111,7 @@ export class AuthService {
                     data: defaultCommands.map(cmd => ({
                         tenantId: tenant.id,
                         trigger: cmd.trigger,
-                        responses: cmd.responses,
+                        responses: JSON.stringify(cmd.responses),
                         isBuiltIn: cmd.isBuiltIn,
                         enabled: true,
                         description: cmd.description,

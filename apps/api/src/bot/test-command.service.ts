@@ -73,14 +73,20 @@ export class TestCommandService {
             msgId: 'test-msg-id-123'
         };
 
-        const resData = (command as any).responses;
-        let responseTemplate = '';
-
-        if (Array.isArray(resData)) {
-            responseTemplate = resData[0]; // Just take first for simulation
-        } else if (typeof resData === 'string') {
-            responseTemplate = resData;
+        const resDataRaw = (command as any).responses;
+        let responses: string[] = [];
+        try {
+            if (typeof resDataRaw === 'string') {
+                const parsed = JSON.parse(resDataRaw);
+                responses = Array.isArray(parsed) ? parsed : [resDataRaw];
+            } else if (Array.isArray(resDataRaw)) {
+                responses = resDataRaw;
+            }
+        } catch (e) {
+            responses = [resDataRaw];
         }
+
+        const responseTemplate = responses[0] || '';
 
         logs.push(`[SIM] Parsing response template: "${responseTemplate}"`);
 
@@ -123,7 +129,7 @@ export class TestCommandService {
 
             case 'ping':
                 logs.push('[SIM] Executing built-in: !ping');
-                return '🏓 Pong! StreamRealm Bot is online in Simulation Mode.';
+                return '🏓 Pong! StreamPulse Bot is online in Simulation Mode.';
 
             case '8ball':
                 logs.push('[SIM] Executing built-in: !8ball');

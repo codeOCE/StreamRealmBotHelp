@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { Clock, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { apiUrl } from '@/lib/api';
 import TimerModal from '../../../components/dashboard/TimerModal';
+import { DeleteButton, EmptyState, FeatureHeader, FeaturePage, LoadingGrid } from '@/components/dashboard/FeatureUI';
 
 interface Timer {
     id: string;
@@ -18,14 +22,13 @@ export default function TimersPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTimer, setEditingTimer] = useState<Timer | undefined>(undefined);
 
-    const API_BASE = '/api/timers';
+    const API_BASE = apiUrl('/api/timers');
 
     const fetchTimers = async () => {
         try {
             setIsLoading(true);
             const res = await fetch(API_BASE, { credentials: 'include' });
-            const data = await res.json();
-            setTimers(data);
+            setTimers(await res.json());
         } catch (err) {
             console.error('Failed to fetch timers', err);
         } finally {
@@ -33,9 +36,7 @@ export default function TimersPage() {
         }
     };
 
-    useEffect(() => {
-        fetchTimers();
-    }, []);
+    useEffect(() => { fetchTimers(); }, []);
 
     const handleSave = async (timerData: Partial<Timer>) => {
         try {
@@ -62,19 +63,13 @@ export default function TimersPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this timer?')) return;
-        try {
-            await fetch(`${API_BASE}/${id}`, {
-                method: 'DELETE',
-                credentials: 'include',
-            });
-            fetchTimers();
-        } catch (err) {
-            console.error('Failed to delete timer', err);
-        }
+        if (!confirm('Delete this timer?')) return;
+        await fetch(`${API_BASE}/${id}`, { method: 'DELETE', credentials: 'include' });
+        fetchTimers();
     };
 
     const toggleTimer = async (id: string, enabled: boolean) => {
+        setTimers(timers.map((t) => (t.id === id ? { ...t, enabled } : t)));
         try {
             await fetch(`${API_BASE}/${id}/toggle`, {
                 method: 'PATCH',
@@ -82,85 +77,110 @@ export default function TimersPage() {
                 body: JSON.stringify({ enabled }),
                 credentials: 'include',
             });
-            setTimers(timers.map(t => t.id === id ? { ...t, enabled } : t));
-        } catch (err) {
-            console.error('Failed to toggle timer', err);
+        } catch {
+            fetchTimers();
         }
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between border-l-4 border-brand-primary pl-6 py-2">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-3xl font-black tracking-tight text-white uppercase">Announcement Timers</h1>
-                    <p className="text-zinc-500 text-sm font-bold tracking-wide">Automated messages broadcasted to chat on a recurring basis.</p>
-                </div>
+        <FeaturePage>
+            <FeatureHeader
+                icon={Clock}
+                title="Timers"
+                subtitle="Send automated messages to chat at set intervals."
+            >
                 <button
-                    onClick={() => {
-                        setEditingTimer(undefined);
-                        setIsModalOpen(true);
-                    }}
-                    className="bg-brand-primary text-white font-black text-xs px-6 py-3 rounded-lg hover:bg-brand-primary/90 transition-all shadow-lg shadow-brand-primary/20 uppercase tracking-widest"
+                    type="button"
+                    onClick={() => { setEditingTimer(undefined); setIsModalOpen(true); }}
+                    className="saas-button"
                 >
-                    + Add New Timer
+                    + New Timer
                 </button>
-            </div>
+            </FeatureHeader>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {isLoading ? (
-                    <div className="col-span-full py-20 text-center text-zinc-600 font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">Syncing Timer Schedules...</div>
-                ) : timers.map((timer) => (
-                    <div key={timer.id} className={`glass-card rounded-xl p-6 transition-all border ${!timer.enabled ? 'opacity-40 grayscale-[0.5] border-white/5' : 'border-white/[0.08] hover:border-brand-primary/20'}`}>
-                        <div className="flex items-start justify-between gap-4 mb-6">
-                            <div className="flex items-start gap-4">
-                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-white/[0.03] border border-white/[0.05] ${timer.enabled ? 'text-brand-primary shadow-lg shadow-brand-primary/10' : 'text-zinc-600'}`}>
-                                    ⏱️
+            {isLoading ? (
+                <LoadingGrid />
+            ) : timers.length === 0 ? (
+                <EmptyState
+                    icon={Clock}
+                    title="No timers yet"
+                    description="Create a timer to automatically post messages in chat on a schedule."
+                    action={
+                        <button type="button" onClick={() => setIsModalOpen(true)} className="saas-button mt-4">
+                            + New Timer
+                        </button>
+                    }
+                />
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {timers.map((timer) => (
+                        <div
+                            key={timer.id}
+                            className={cn(
+                                'bento-card holo-card p-7 group',
+                                !timer.enabled && 'opacity-45 grayscale',
+                            )}
+                        >
+                            <div className="flex items-start justify-between gap-4 mb-6">
+                                <div className="flex items-start gap-4 min-w-0">
+                                    <div className={cn(
+                                        'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border',
+                                        timer.enabled
+                                            ? 'bg-brand-primary/10 border-brand-primary/20 text-brand-primary'
+                                            : 'bg-white/[0.03] border-white/8 text-zinc-600',
+                                    )}>
+                                        {timer.enabled ? <Sparkles className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="font-black text-base text-white group-hover:text-brand-primary transition-colors truncate">{timer.name}</h3>
+                                        <p className="text-[11px] text-zinc-600 font-medium mt-1 line-clamp-2">&ldquo;{timer.message}&rdquo;</p>
+                                    </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <h3 className="font-black text-sm tracking-tight text-white uppercase">{timer.name}</h3>
-                                    <p className="text-[10px] text-zinc-400 font-bold italic line-clamp-1">"{timer.message}"</p>
+                                <button
+                                    type="button"
+                                    onClick={() => toggleTimer(timer.id, !timer.enabled)}
+                                    className={cn(
+                                        'w-12 h-7 rounded-full relative border shrink-0 cursor-pointer transition-colors',
+                                        timer.enabled ? 'bg-brand-primary border-brand-primary/20 shadow-glow-p' : 'bg-zinc-900 border-white/8',
+                                    )}
+                                    aria-label={timer.enabled ? 'Disable timer' : 'Enable timer'}
+                                >
+                                    <div className={cn(
+                                        'absolute top-0.5 w-6 h-6 bg-white rounded-full transition-all shadow-md',
+                                        timer.enabled ? 'left-[1.35rem]' : 'left-0.5 bg-zinc-500',
+                                    )} />
+                                </button>
+                            </div>
+
+                            <div className="pt-5 border-t border-white/[0.06] flex items-center justify-between gap-4">
+                                <div className="flex gap-6">
+                                    <div>
+                                        <p className="text-[9px] font-black  text-zinc-600 mb-1">Interval</p>
+                                        <p className="text-sm font-black text-white tabular-nums">
+                                            {Math.floor(timer.intervalSeconds / 60)}<span className="text-[10px] text-zinc-600 ml-1">min</span>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-black  text-zinc-600 mb-1">Min messages</p>
+                                        <p className="text-sm font-black text-white tabular-nums">{timer.chatLines}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setEditingTimer(timer); setIsModalOpen(true); }}
+                                        className="p-2.5 rounded-xl bg-white/[0.03] border border-white/8 text-zinc-500 hover:text-white hover:border-brand-primary/20 transition-colors cursor-pointer"
+                                        aria-label="Edit timer"
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                                    </button>
+                                    <DeleteButton onClick={() => handleDelete(timer.id)} />
                                 </div>
                             </div>
-                            <button
-                                onClick={() => toggleTimer(timer.id, !timer.enabled)}
-                                className={`w-12 h-6 rounded-lg relative transition-all duration-300 border border-white/10 ${timer.enabled ? 'bg-brand-primary' : 'bg-surface-bright'}`}
-                            >
-                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-md transition-all shadow-md ${timer.enabled ? 'left-7' : 'left-1'}`} />
-                            </button>
                         </div>
-
-                        {timer.enabled && (
-                            <div className="pt-6 border-t border-white/[0.05] grid grid-cols-3 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 block">Frequency</label>
-                                    <p className="text-white font-black text-xs">{Math.floor(timer.intervalSeconds / 60)}m</p>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 block">Min Lines</label>
-                                    <p className="text-white font-black text-xs">{timer.chatLines} msgs</p>
-                                </div>
-                                <div className="flex justify-end items-end gap-2">
-                                    <button
-                                        onClick={() => {
-                                            setEditingTimer(timer);
-                                            setIsModalOpen(true);
-                                        }}
-                                        className="p-2 rounded-md bg-white/[0.03] border border-white/[0.05] text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-all"
-                                    >
-                                        ✏️
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(timer.id)}
-                                        className="p-2 rounded-md bg-white/[0.03] border border-white/[0.05] text-zinc-500 hover:text-rose-500 hover:bg-rose-500/10 transition-all"
-                                    >
-                                        🗑️
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             <TimerModal
                 isOpen={isModalOpen}
@@ -168,6 +188,6 @@ export default function TimersPage() {
                 onSave={handleSave}
                 initialData={editingTimer}
             />
-        </div>
+        </FeaturePage>
     );
 }

@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Edit, Trash2, ExternalLink, Copy } from 'lucide-react';
+import { Copy, Edit, ExternalLink, Layers, Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import { apiUrl } from '@/lib/api';
+import {
+    ActionChip, DeleteButton, EmptyState, FeatureHeader, FeaturePage,
+    Field, LoadingGrid, Panel, ProgressRow,
+} from '@/components/dashboard/FeatureUI';
 
 interface Overlay {
     id: string;
@@ -10,7 +16,7 @@ interface Overlay {
     description?: string;
     urlSlug: string;
     createdAt: string;
-    widgets: any[];
+    widgets: unknown[];
 }
 
 export default function OverlaysPage() {
@@ -20,35 +26,18 @@ export default function OverlaysPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newOverlayName, setNewOverlayName] = useState('');
     const [newOverlayDescription, setNewOverlayDescription] = useState('');
+    const [creating, setCreating] = useState(false);
 
-
-
-    useEffect(() => {
-        fetchOverlays();
-    }, []);
+    useEffect(() => { fetchOverlays(); }, []);
 
     const fetchOverlays = async () => {
         try {
-            const userRes = await fetch('/api/user/me');
-            const userData = await userRes.json();
-            const tenantId = userData.tenantId;
-
-            const res = await fetch(`/api/overlays?tenantId=${tenantId}`);
-            if (!res.ok) {
-                console.error('Failed to fetch overlays:', res.status, res.statusText);
-                setOverlays([]);
-                return;
-            }
-
+            const res = await fetch(apiUrl('/api/overlays'), { credentials: 'include' });
+            if (!res.ok) { setOverlays([]); return; }
             const data = await res.json();
-            if (Array.isArray(data)) {
-                setOverlays(data);
-            } else {
-                console.error('API returned non-array:', data);
-                setOverlays([]);
-            }
-        } catch (error) {
-            console.error('Failed to fetch overlays:', error);
+            setOverlays(Array.isArray(data) ? data : []);
+        } catch {
+            setOverlays([]);
         } finally {
             setLoading(false);
         }
@@ -56,202 +45,181 @@ export default function OverlaysPage() {
 
     const createOverlay = async () => {
         if (!newOverlayName.trim()) return;
-
+        setCreating(true);
         try {
-            const userRes = await fetch('/api/user/me');
-            const userData = await userRes.json();
-            const tenantId = userData.tenantId;
-
-            const res = await fetch(`/api/overlays?tenantId=${tenantId}`, {
+            const res = await fetch(apiUrl('/api/overlays'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: newOverlayName,
-                    description: newOverlayDescription,
-                }),
+                credentials: 'include',
+                body: JSON.stringify({ name: newOverlayName, description: newOverlayDescription }),
             });
-
-            if (res.ok) {
-                setShowCreateModal(false);
-                setNewOverlayName('');
-                setNewOverlayDescription('');
-                fetchOverlays();
-            }
-        } catch (error) {
-            console.error('Failed to create overlay:', error);
+            if (!res.ok) { toast.error('Could not create overlay'); return; }
+            toast.success('Overlay created');
+            setShowCreateModal(false);
+            setNewOverlayName('');
+            setNewOverlayDescription('');
+            fetchOverlays();
+        } finally {
+            setCreating(false);
         }
     };
 
     const deleteOverlay = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this overlay?')) return;
-
-        try {
-            const userRes = await fetch('/api/user/me');
-            const userData = await userRes.json();
-            const tenantId = userData.tenantId;
-
-            await fetch(`/api/overlays/${id}?tenantId=${tenantId}`, {
-                method: 'DELETE',
-            });
-            fetchOverlays();
-        } catch (error) {
-            console.error('Failed to delete overlay:', error);
-        }
+        if (!confirm('Delete this overlay?')) return;
+        const res = await fetch(apiUrl(`/api/overlays/${id}`), { method: 'DELETE', credentials: 'include' });
+        if (!res.ok) { toast.error('Could not delete'); return; }
+        toast.success('Overlay deleted');
+        fetchOverlays();
     };
 
     const copyBrowserSourceUrl = (urlSlug: string) => {
-        const url = `http://localhost:3000/overlay/${urlSlug}`;
+        const url = `${window.location.origin}/overlay/${urlSlug}`;
         navigator.clipboard.writeText(url);
-        alert('Browser source URL copied to clipboard!');
+        toast.success('Browser source URL copied');
+    };
+
+    const closeModal = () => {
+        setShowCreateModal(false);
+        setNewOverlayName('');
+        setNewOverlayDescription('');
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-96">
-                <div className="text-lg">Loading overlays...</div>
-            </div>
+            <FeaturePage>
+                <div className="flex items-start justify-between gap-6">
+                    <div className="space-y-2">
+                        <div className="skeleton h-9 w-40 rounded-2xl" />
+                        <div className="skeleton h-4 w-72 rounded-lg" />
+                    </div>
+                    <div className="skeleton h-10 w-36 rounded-xl" />
+                </div>
+                <LoadingGrid cols={3} />
+            </FeaturePage>
         );
     }
 
     return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold">Overlays</h1>
-                    <p className="text-gray-400 mt-2">
-                        Create custom browser source overlays for your stream
-                    </p>
-                </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition"
-                >
-                    <Plus size={20} />
-                    New Overlay
+        <FeaturePage>
+            <FeatureHeader
+                icon={Layers}
+                title="Overlays"
+                subtitle="Create and manage browser source overlays for OBS, Streamlabs, and more."
+            >
+                <button type="button" onClick={() => setShowCreateModal(true)} className="saas-button gap-2">
+                    <Plus size={16} /> New Overlay
                 </button>
-            </div>
+            </FeatureHeader>
 
             {overlays.length === 0 ? (
-                <div className="text-center py-16 bg-slate-800/50 rounded-lg border border-slate-700">
-                    <h3 className="text-xl font-semibold mb-2">No overlays yet</h3>
-                    <p className="text-gray-400 mb-4">Create your first overlay to get started</p>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg transition"
-                    >
-                        Create Overlay
-                    </button>
-                </div>
+                <EmptyState
+                    icon={Layers}
+                    title="No overlays yet"
+                    description="Create your first overlay to add alerts, goals, and widgets to your stream."
+                    action={
+                        <button type="button" onClick={() => setShowCreateModal(true)} className="saas-button mt-4">
+                            Create Overlay
+                        </button>
+                    }
+                />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {overlays.map((overlay) => (
-                        <div
-                            key={overlay.id}
-                            className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 hover:border-purple-500/50 transition"
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h3 className="text-xl font-semibold">{overlay.name}</h3>
+                        <div key={overlay.id} className="bento-card holo-card p-7 flex flex-col gap-6 group">
+                            <div className="flex justify-between items-start gap-4">
+                                <div className="min-w-0">
+                                    <h3 className="text-lg font-black text-white tracking-tight group-hover:text-brand-primary transition-colors truncate">
+                                        {overlay.name}
+                                    </h3>
                                     {overlay.description && (
-                                        <p className="text-gray-400 text-sm mt-1">
-                                            {overlay.description}
-                                        </p>
+                                        <p className="text-[11px] text-zinc-600 font-medium mt-1 line-clamp-2">{overlay.description}</p>
                                     )}
+                                </div>
+                                <div className="w-11 h-11 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary shrink-0">
+                                    <Layers className="w-5 h-5" strokeWidth={2} />
                                 </div>
                             </div>
 
-                            <div className="text-sm text-gray-400 mb-4">
-                                {overlay.widgets.length} widget{overlay.widgets.length !== 1 ? 's' : ''}
-                            </div>
+                            <ProgressRow
+                                label="Widgets"
+                                pct={Math.min(100, (overlay.widgets.length / 10) * 100)}
+                                count={overlay.widgets.length}
+                                leading
+                            />
 
-                            <div className="flex gap-2">
+                            <div className="grid grid-cols-4 gap-2">
                                 <button
+                                    type="button"
                                     onClick={() => router.push(`/editor/${overlay.id}`)}
-                                    className="flex-1 flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded transition"
+                                    className="col-span-2 saas-button !py-3 !text-[10px] gap-2 cursor-pointer"
                                 >
-                                    <Edit size={16} />
-                                    Edit
+                                    <Edit size={14} /> Edit
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => copyBrowserSourceUrl(overlay.urlSlug)}
-                                    className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded transition"
-                                    title="Copy browser source URL"
+                                    className="flex items-center justify-center rounded-xl bg-white/[0.03] border border-white/8 text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+                                    title="Copy URL"
+                                    aria-label="Copy browser source URL"
                                 >
                                     <Copy size={16} />
                                 </button>
-                                <button
-                                    onClick={() => window.open(`/overlay/${overlay.urlSlug}`, '_blank')}
-                                    className="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded transition"
-                                    title="Preview overlay"
-                                >
-                                    <ExternalLink size={16} />
-                                </button>
-                                <button
-                                    onClick={() => deleteOverlay(overlay.id)}
-                                    className="flex items-center justify-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 px-3 py-2 rounded transition"
-                                    title="Delete overlay"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                <DeleteButton onClick={() => deleteOverlay(overlay.id)} />
                             </div>
+
+                            <ActionChip
+                                variant="ghost"
+                                className="w-full !py-3 gap-2"
+                                onClick={() => window.open(`/overlay/${overlay.urlSlug}`, '_blank')}
+                            >
+                                <ExternalLink size={14} /> Preview
+                            </ActionChip>
                         </div>
                     ))}
                 </div>
             )}
 
-            {/* Create Modal */}
             {showCreateModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md border border-slate-700">
-                        <h2 className="text-2xl font-bold mb-4">Create New Overlay</h2>
-
+                <div
+                    className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-[700] p-4 animate-in fade-in duration-200"
+                    onClick={(e) => e.target === e.currentTarget && closeModal()}
+                >
+                    <Panel className="w-full max-w-md !rounded-[2rem] animate-in zoom-in-95 duration-200" title="New Overlay">
                         <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Name</label>
+                            <Field label="Overlay name">
                                 <input
                                     type="text"
                                     value={newOverlayName}
                                     onChange={(e) => setNewOverlayName(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 focus:outline-none focus:border-purple-500"
-                                    placeholder="My Awesome Overlay"
+                                    className="void-input"
+                                    placeholder="My overlay…"
                                     autoFocus
                                 />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Description (optional)</label>
+                            </Field>
+                            <Field label="Description">
                                 <textarea
                                     value={newOverlayDescription}
                                     onChange={(e) => setNewOverlayDescription(e.target.value)}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 focus:outline-none focus:border-purple-500"
-                                    placeholder="A brief description of this overlay"
+                                    className="void-input resize-none"
                                     rows={3}
+                                    placeholder="Optional…"
                                 />
-                            </div>
+                            </Field>
                         </div>
-
-                        <div className="flex gap-3 mt-6">
+                        <div className="flex gap-3 mt-6 pt-6 border-t border-white/[0.06]">
+                            <button type="button" onClick={closeModal} className="saas-button-secondary flex-1">Cancel</button>
                             <button
+                                type="button"
                                 onClick={createOverlay}
-                                className="flex-1 bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded transition"
-                                disabled={!newOverlayName.trim()}
+                                disabled={!newOverlayName.trim() || creating}
+                                className="saas-button flex-[2] disabled:opacity-50"
                             >
-                                Create
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setShowCreateModal(false);
-                                    setNewOverlayName('');
-                                    setNewOverlayDescription('');
-                                }}
-                                className="flex-1 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded transition"
-                            >
-                                Cancel
+                                {creating ? 'Creating…' : 'Create Overlay'}
                             </button>
                         </div>
-                    </div>
+                    </Panel>
                 </div>
             )}
-        </div>
+        </FeaturePage>
     );
 }

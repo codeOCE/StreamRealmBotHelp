@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CreatorCastle Cosmetics</title>
+  <style>
+    :root { --accent: #a855f7; --cyan: #22d3ee; }
+    * { box-sizing: border-box; }
+    body {
+      width: 300px; margin: 0; padding: 18px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0a0a0f; color: #e5e7eb;
+    }
+    .brand { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; }
+    .logo {
+      width: 28px; height: 28px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      display: grid; place-items: center; font-size: 15px;
+    }
+    .title { font-weight: 800; font-size: 14px; letter-spacing: -0.01em; }
+    .title span { background: linear-gradient(90deg, var(--accent), var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-top: 1px solid rgba(255,255,255,0.06); }
+    label { font-size: 12px; font-weight: 600; color: #cbd5e1; }
+    .hint { font-size: 10px; color: #6b7280; margin-top: 3px; }
+    input[type="text"] {
+      width: 100%; margin-top: 8px; padding: 8px 10px; border-radius: 8px;
+      background: #15151d; border: 1px solid rgba(255,255,255,0.08); color: #e5e7eb;
+      font-size: 12px; outline: none;
+    }
+    input[type="text"]:focus { border-color: var(--accent); }
+    .switch { position: relative; width: 42px; height: 23px; flex: none; cursor: pointer; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: #2a2a35; border-radius: 999px; transition: 0.2s; }
+    .slider::before { content: ""; position: absolute; width: 17px; height: 17px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: 0.2s; }
+    .switch input:checked + .slider { background: var(--accent); }
+    .switch input:checked + .slider::before { transform: translateX(19px); }
+    .status { font-size: 11px; margin-top: 14px; padding: 9px 11px; border-radius: 8px; background: #15151d; border: 1px solid rgba(255,255,255,0.06); color: #9ca3af; }
+    .status b { color: #e5e7eb; }
+    .footer { margin-top: 14px; font-size: 10px; color: #6b7280; text-align: center; }
+    .footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <div class="logo">🎨</div>
+    <div class="title">Creator<span>Castle</span> Cosmetics</div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="enabled">Show cosmetics</label>
+      <div class="hint">Badges & paints in Twitch chat</div>
+    </div>
+    <span class="switch"><input type="checkbox" id="enabled" /><span class="slider"></span></span>
+  </div>
+
+  <div class="row" style="display:block;">
+    <label for="apiBase">API server</label>
+    <input type="text" id="apiBase" placeholder="https://api.creatorcastle.gg" spellcheck="false" />
+    <div class="hint">Use http://localhost:8787 for local development.</div>
+  </div>
+
+  <div class="status" id="status">Open a Twitch channel to see cosmetics.</div>
+
+  <div class="footer">Manage your channel's cosmetics in the <a id="dash" href="#" target="_blank">CreatorCastle dashboard</a>.</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

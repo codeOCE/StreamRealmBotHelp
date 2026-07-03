@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "CreatorCastle Cosmetics",
+  "version": "0.1.0",
+  "description": "7TV-style badges and animated name paints for CreatorCastle channels, shown live in Twitch chat.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://api.creatorcastle.gg/*",
+    "http://localhost:8787/*",
+    "http://127.0.0.1:8787/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "CreatorCastle Cosmetics"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.twitch.tv/*"],
+      "js": ["src/content.js"],
+      "css": ["src/cosmetics.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

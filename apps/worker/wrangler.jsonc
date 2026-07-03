@@ -1,0 +1,46 @@
+{
+  // CreatorCastle backend API — Cloudflare Worker on Supabase.
+  // Mirrors the architecture of TCG/mulistreamer-tcg. Backend-only:
+  // the Next.js web app (apps/web) calls this Worker's HTTP API.
+  "name": "creatorcastle-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-05-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  // Production custom domain on the creatorcastle.gg zone (same zone as the TCG
+  // worker at tcg.creatorcastle.gg). Wrangler provisions the DNS record + cert.
+  "routes": [
+    { "pattern": "api.creatorcastle.gg", "custom_domain": true, "zone_name": "creatorcastle.gg" }
+  ],
+  // Non-secret config only. These are the PRODUCTION values used by `wrangler deploy`.
+  // Local `wrangler dev` overrides ENVIRONMENT/FRONTEND_URL/PUBLIC_WORKER_URL/COOKIE_DOMAIN
+  // back to localhost via .dev.vars. Secrets (SUPABASE_*, SESSION_SECRET,
+  // ENCRYPTION_SECRET, TWITCH_*, EVENTSUB_SECRET) are set via `wrangler secret put`.
+  "vars": {
+    "ENVIRONMENT": "production",
+    // The gated app lives on the app subdomain; the apex stays on the coming-soon
+    // page. Post-login redirects + safe-return base must point at the app.
+    "FRONTEND_URL": "https://app.creatorcastle.gg",
+    "PUBLIC_WORKER_URL": "https://api.creatorcastle.gg",
+    "COOKIE_DOMAIN": ".creatorcastle.gg"
+  },
+  // Cron-driven work (timer sweep). Fires scheduled() every minute.
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  // Durable Objects: realtime WS hub + per-streamer token broker.
+  "durable_objects": {
+    "bindings": [
+      { "name": "REALTIME", "class_name": "RealtimeHub" },
+      { "name": "TOKENS", "class_name": "CreatorTokenDO" }
+    ]
+  },
+  "migrations": [
+    // SQLite-backed DOs (required on the free plan; KV-backed `new_classes` is
+    // paid-only). Hibernatable WebSockets are fully supported on SQLite backing.
+    { "tag": "v1", "new_sqlite_classes": ["RealtimeHub"] },
+    { "tag": "v2", "new_sqlite_classes": ["CreatorTokenDO"] }
+  ]
+}

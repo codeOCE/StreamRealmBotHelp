@@ -1,0 +1,54 @@
+# Copy this file to `.dev.vars` and fill in real values for local `wrangler dev`.
+# `.dev.vars` is gitignored — never commit real secrets.
+# In production these are set via `wrangler secret put <NAME>`.
+
+# --- Local dev overrides (wrangler.jsonc defaults are production) ---
+ENVIRONMENT="development"
+FRONTEND_URL="http://localhost:3002"
+DEV_SKIP_AUTH="true"
+DEV_STREAMER_ID="c2b3c127-3611-421d-8194-a35313090986"
+DEV_TWITCH_ID="96085876"
+DEV_USERNAME="codeoce"
+
+# --- Supabase ---
+SUPABASE_URL="https://YOUR-PROJECT.supabase.co"
+# Anon (public) key — used for anon-scoped/RLS-respecting access.
+SUPABASE_KEY="your-anon-key"
+# Service-role key — used by the Worker for privileged access (bypasses RLS). Keep secret.
+SUPABASE_SERVICE_KEY="your-service-role-key"
+
+# --- Auth / crypto ---
+# HS256 signing secret for the `session` JWT cookie.
+# MUST match the TCG worker's SESSION_SECRET so sessions are shared across
+# *.creatorcastle.gg. Use the existing shared value, not a fresh one.
+SESSION_SECRET="same-as-tcg-worker"
+# Dedicated AES-GCM key for encrypting Twitch tokens. Generate: openssl rand -base64 48
+# If unset, SESSION_SECRET is used as a fallback.
+ENCRYPTION_SECRET="change-me-long-random-string"
+
+# --- Twitch OAuth ---
+# Register the app at https://dev.twitch.tv/console/apps with an OAuth Redirect URL
+# of http://localhost:8787/auth/callback for local dev.
+TWITCH_CLIENT_ID=""
+TWITCH_CLIENT_SECRET=""
+
+# --- Nightbot OAuth (optional; external command import) ---
+# Register an app at https://nightbot.tv/account/applications with redirect URL
+# http://localhost:8787/api/auth/nightbot/callback. StreamElements needs no app
+# (the user pastes a JWT), so this is only required for the Nightbot connect button.
+NIGHTBOT_CLIENT_ID=""
+NIGHTBOT_CLIENT_SECRET=""
+
+# --- Amazon Polly (tip TTS) ---
+# IAM: polly:SynthesizeSpeech only. standard ≈ $4/1M chars; neural ≈ $16/1M.
+AWS_ACCESS_KEY_ID=""
+AWS_SECRET_ACCESS_KEY=""
+AWS_REGION="us-east-1"
+POLLY_VOICE_ID="Brian"
+POLLY_ENGINE="standard"
+
+# --- Cookie domain ---
+# Leave UNSET locally (host-only cookie on localhost works across ports).
+# In production set to ".creatorcastle.gg" so the session is shared across
+# subdomains (web app, worker, TCG).
+# COOKIE_DOMAIN=".creatorcastle.gg"

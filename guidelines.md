@@ -1,6 +1,6 @@
-# StreamRealm Development Guidelines
+# StreamPulse Development Guidelines
 
-This document serves as the primary source of truth for the development, architecture, and design of **StreamRealm**—the all-in-one streamer ecosystem. All LLM-generated code and architectural decisions must adhere to these standards to ensure a cohesive, high-performance monorepo.
+This document serves as the primary source of truth for the development, architecture, and design of **StreamPulse**—the all-in-one streamer ecosystem. All LLM-generated code and architectural decisions must adhere to these standards to ensure a cohesive, high-performance monorepo.
 
 ---
 
@@ -29,14 +29,15 @@ This document serves as the primary source of truth for the development, archite
 
 ## 2. Visual Identity & Design System
 
-The aesthetic is inspired by high-end SaaS platforms (Ragebite/Linear/Stripe). It must feel "premium, dark, and fluid."
+The aesthetic is inspired by high-end SaaS platforms (Ragebite/Linear/Stripe) but with a **Cosmic/Space** twist inspired by `dive.club`. It must feel "premium, interstellar, and deep."
 
 ### **Color Palette & Atmosphere**
-- **Base**: `zinc-950` (Deep Black/Gray) for backgrounds.
-- **Accents**: Subtle gradients, electric purples (Twitch-inspired), or high-contrast white text.
+- **Base**: `black` (#030303) for deepest space.
+- **Accents**: Stellar Violet, Nebula Fuchsia, and Comet Cyan.
 - **Glassmorphism**: 
-  - Use `backdrop-blur-md` and `bg-zinc-900/50` for cards and navigation.
-  - Borders should be thin and subtle: `border-white/10`.
+  - Use high `backdrop-blur` values and subtle borders.
+  - Borders should be thin and subtle: `border-white/5`.
+- **Atmosphere**: Use subtle star fields and nebulous gradients.
 
 ### **UI Components**
 - **Layout**: Spacious with consistent padding. Use a "sidebar-first" navigation approach.
@@ -44,7 +45,7 @@ The aesthetic is inspired by high-end SaaS platforms (Ragebite/Linear/Stripe). I
   - Layout transitions.
   - Button hover states (subtle scale-up or glow).
   - Progressive loading of dashboard widgets.
-- **Typography**: Clean sans-serif (Inter or Geist) with tight tracking for headers.
+- **Typography**: Clean sans-serif (Inter or Geist) with wider letter spacing for headers to feel more astronomical.
 
 ---
 
@@ -73,9 +74,9 @@ The aesthetic is inspired by high-end SaaS platforms (Ragebite/Linear/Stripe). I
 ## 5. Implementation Instructions for LLM
 
 1.  **When writing Backend code**: Focus on NestJS Dependency Injection. Always create a Service for logic and a Controller for the API.
-2.  **When writing Frontend code**: Prioritize the "Linear" aesthetic. Use Tailwind's arbitrary values if needed for ultra-thin borders (e.g., `border-[0.5px]`).
+2.  **When writing Frontend code**: Prioritize the "Interstellar" aesthetic. Use high blur values and cosmic glows.
 3.  **When writing Bot logic**: Ensure there is always a check for `isMod` or `isBroadcaster` for sensitive commands.
 4.  **Formatting**: Use Prettier-style formatting, 2-space indentation, and semicolons.
 
 ---
-*StreamRealm: Beyond Bots. A New Standard for Streamers.*
+*StreamCosmos: Beyond Bots. A New Standard for Streamers.*

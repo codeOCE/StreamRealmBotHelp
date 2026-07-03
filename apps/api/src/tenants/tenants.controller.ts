@@ -15,7 +15,7 @@ export class TenantsController {
     updateSettings(@Param('id') id: string, @Body() settings: Prisma.InputJsonValue) {
         return this.tenantsService.updateTenant({
             where: { id },
-            data: { settings },
+            data: { settings: JSON.stringify(settings) },
         });
     }
 

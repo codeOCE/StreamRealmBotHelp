@@ -1,0 +1,23 @@
+---
+description: Do not reference competitor products in user-facing website copy
+alwaysApply: true
+---
+
+# No competitor references on the website
+
+Never name or compare to competitor streaming tools (StreamElements, Nightbot, Streamlabs, etc.) in user-facing UI, marketing copy, docs shown to creators, or dashboard helper text.
+
+## Allowed
+
+- Import flows where the user is connecting to or importing from a specific external service (e.g. StreamElements JWT import, Nightbot OAuth).
+- Internal code comments, migrations, ADRs, and tests (not shown to end users).
+
+## Not allowed
+
+- "Like StreamElements…", "similar to…", "SE-style", or any feature comparison on the site.
+- Positioning Creator Castle by referencing another product's features or setup steps.
+
+## Instead
+
+- Describe what Creator Castle does in plain language.
+- For import compatibility, say "legacy import syntax" or "when importing commands" — not the competitor brand outside the import UI.

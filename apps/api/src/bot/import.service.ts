@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import axios from 'axios';
-import { UserLevel } from '@prisma/client';
+import { UserLevel } from '../common/enums';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -43,7 +43,10 @@ export class ImportService {
         }
     }
 
-    async processImport(tenantId: string, provider: string, commands: any[]) {
+    async processImport(tenantId: string, provider: string, commands: any[], dataType: string = 'commands') {
+        if (dataType === 'timers') return this.processTimers(tenantId, commands);
+        if (dataType === 'points') return this.processPoints(tenantId, commands);
+
         let imported = 0;
         let failed = 0;
         let skipped = 0;
@@ -88,7 +91,7 @@ export class ImportService {
                     data: {
                         tenantId,
                         trigger,
-                        responses: [response],
+                        responses: JSON.stringify([response]),
                         enabled: cmd.enabled ?? true, // Default to true if missing
                         description: cmd.description || `Imported from ${provider}`,
                         isBuiltIn: false,
@@ -108,6 +111,84 @@ export class ImportService {
                 this.logger.error(`Failed to import command ${cmd.trigger}: ${error.message}`);
                 failed++;
                 failedCommands.push(`${cmd.trigger || 'unknown'}: ${error.message}`);
+            }
+        }
+
+        return { imported, skipped, failed, failedCommands };
+    }
+
+    async processTimers(tenantId: string, timers: any[]) {
+        let imported = 0;
+        let failed = 0;
+        let skipped = 0;
+        const failedCommands: string[] = [];
+
+        for (const timer of timers) {
+            try {
+                const name = timer.name;
+                if (!name) throw new Error(`Timer missing name: ${JSON.stringify(timer)}`);
+
+                const existing = await (this.prisma as any).timer.findFirst({ where: { tenantId, name } });
+                if (existing) {
+                    skipped++;
+                    continue;
+                }
+
+                await (this.prisma as any).timer.create({
+                    data: {
+                        tenantId,
+                        name,
+                        message: timer.message || '',
+                        intervalSeconds: Math.max(timer.intervalSeconds || 300, 60),
+                        chatLines: timer.chatLines || 0,
+                        enabled: timer.enabled ?? true,
+                    }
+                });
+
+                imported++;
+            } catch (error: any) {
+                this.logger.error(`Failed to import timer ${timer.name}: ${error.message}`);
+                failed++;
+                failedCommands.push(`${timer.name || 'unknown'}: ${error.message}`);
+            }
+        }
+
+        return { imported, skipped, failed, failedCommands };
+    }
+
+    async processPoints(tenantId: string, points: any[]) {
+        let imported = 0;
+        let failed = 0;
+        let skipped = 0;
+        const failedCommands: string[] = [];
+
+        // Only update viewers who already exist here — we don't have a Twitch user ID
+        // to safely create a new profile from a username alone. SQLite has no
+        // case-insensitive query support, so match by lowercased username in memory.
+        const viewers = await this.prisma.viewerProfile.findMany({ where: { tenantId } });
+        const viewerByUsername = new Map(viewers.map(v => [v.username.toLowerCase(), v]));
+
+        for (const entry of points) {
+            try {
+                const username = (entry.username || '').toLowerCase();
+                if (!username) throw new Error(`Point entry missing username: ${JSON.stringify(entry)}`);
+
+                const viewer = viewerByUsername.get(username);
+                if (!viewer) {
+                    skipped++;
+                    continue;
+                }
+
+                await this.prisma.viewerProfile.update({
+                    where: { id: viewer.id },
+                    data: { points: entry.points || 0 }
+                });
+
+                imported++;
+            } catch (error: any) {
+                this.logger.error(`Failed to import points for ${entry.username}: ${error.message}`);
+                failed++;
+                failedCommands.push(`${entry.username || 'unknown'}: ${error.message}`);
             }
         }
 

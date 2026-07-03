@@ -16,6 +16,11 @@ export function ImportStepSelect() {
     const [searchTerm, setSearchTerm] = useState("");
 
     const getItemDetails = (item: any) => {
+        if (state.dataType === 'points') {
+            const id = item.id || item.username;
+            return { id, trigger: item.username || "", response: `${item.points ?? 0} pts` };
+        }
+
         // Backend returns transformed data with 'trigger' and 'responses' array
         // Nightbot/StreamElements raw data might have different fields
         const id = item._id || item.id || item.name || item.command || item.trigger;
@@ -30,6 +35,14 @@ export function ImportStepSelect() {
 
         return { id, trigger, response };
     };
+
+    // $(eval) runs arbitrary JS on the old bots and is not supported here —
+    // commands using it import fine but reply with a placeholder until rewritten.
+    const usesEval = (response: string) => /\$[({]\s*eval\b/i.test(response);
+    const evalCount = useMemo(
+        () => state.items.filter((i: any) => usesEval(getItemDetails(i).response)).length,
+        [state.items],
+    );
 
     const filteredItems = useMemo(() => {
         return state.items.filter((item: any) => {
@@ -60,7 +73,7 @@ export function ImportStepSelect() {
         }
 
         setIsMigrating(true);
-        addLog("Initializing migration sequence...");
+        addLog("Starting import...");
 
         // Short delay to show the button state
         setTimeout(() => {
@@ -81,6 +94,14 @@ export function ImportStepSelect() {
                 </div>
             </div>
 
+            {evalCount > 0 && (
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-300/90 font-medium">
+                    {evalCount} command{evalCount === 1 ? '' : 's'} use <code className="font-mono">$(eval)</code>, which runs custom scripts we don&rsquo;t
+                    support. They&rsquo;ll import, but reply with a placeholder until you rewrite them &mdash; most can be rebuilt
+                    with <code className="font-mono">$(urlfetch)</code>, <code className="font-mono">$(random)</code>, and <code className="font-mono">$(count)</code>.
+                </div>
+            )}
+
             <div className="flex items-center space-x-4 mb-6">
                 <div className="relative flex-1 group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 group-focus-within:text-brand-primary transition-colors" />
@@ -94,7 +115,7 @@ export function ImportStepSelect() {
                 <Button
                     variant="outline"
                     onClick={handleSelectAll}
-                    className="h-12 px-6 border-white/10 hover:bg-white/5 hover:text-white text-zinc-400 uppercase tracking-wider text-[10px] font-bold rounded-xl transition-all"
+                    className="h-12 px-6 border-white/10 hover:bg-white/5 hover:text-white text-zinc-400  text-[10px] font-bold rounded-xl transition-all"
                 >
                     {isAllSelected ? (
                         <><Square className="mr-2 h-4 w-4" /> Deselect All</>
@@ -138,11 +159,16 @@ export function ImportStepSelect() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <span className={`font-black tracking-tight text-sm ${isSelected ? 'text-brand-primary' : 'text-white'}`}>
-                                                !{trigger}
+                                                {state.dataType === 'commands' ? `!${trigger}` : trigger}
                                             </span>
                                             {isSelected && (
                                                 <Badge variant="outline" className="text-[9px] px-1 h-4 border-brand-primary/20 text-brand-primary bg-brand-primary/5">
                                                     Selected
+                                                </Badge>
+                                            )}
+                                            {usesEval(response) && (
+                                                <Badge variant="outline" className="text-[9px] px-1 h-4 border-amber-500/30 text-amber-400 bg-amber-500/5">
+                                                    Uses eval — needs rewrite
                                                 </Badge>
                                             )}
                                         </div>

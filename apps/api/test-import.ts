@@ -46,7 +46,7 @@ async function main() {
                 enabled: true,
                 isBuiltIn: false,
                 isRegex: false
-            }
+            } as any
         });
         console.log('Direct DB Create Success:', result.id);
 
