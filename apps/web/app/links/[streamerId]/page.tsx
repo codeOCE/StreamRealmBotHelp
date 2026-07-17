@@ -8,6 +8,7 @@ import { PublicNav } from '@/components/public/PublicNav';
 import { LinkIcon } from '@/components/LinkIcon';
 
 interface LinkItem {
+  id: string;
   label: string;
   url: string;
   icon: string | null;
@@ -97,10 +98,14 @@ export default function PublicLinksPage() {
               </div>
             ) : links.map((l) => (
               <a
-                key={l.url}
+                key={l.id}
                 href={l.url}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
+                onClick={() => {
+                  // keepalive so the beacon survives the navigation
+                  try { fetch(apiUrl(`/api/links/public/${streamerId}/click/${l.id}`), { method: 'POST', keepalive: true }); } catch { /* best effort */ }
+                }}
                 className={cn(
                   'flex items-center gap-4 px-6 py-5 transition-all group',
                   shapeCls,

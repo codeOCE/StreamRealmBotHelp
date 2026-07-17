@@ -16,6 +16,7 @@ import { error, json } from '../lib/response';
  *   GET    /api/links/settings         page style (accent/buttonStyle/shape)
  *   PUT    /api/links/settings         update page style
  *   GET    /api/links/public/:streamerId  public, enabled links + style (no auth)
+ *   POST   /api/links/public/:streamerId/click/:linkId  click beacon (no auth)
  */
 
 interface LinkRow {
@@ -25,10 +26,11 @@ interface LinkRow {
   icon: string | null;
   enabled: boolean;
   sort: number;
+  clicks: number;
 }
 
 function linkToApi(l: LinkRow) {
-  return { id: l.id, label: l.label, url: l.url, icon: l.icon, enabled: l.enabled, sort: l.sort };
+  return { id: l.id, label: l.label, url: l.url, icon: l.icon, enabled: l.enabled, sort: l.sort, clicks: l.clicks ?? 0 };
 }
 
 /** Map an API body to DB columns. Returns null on invalid input. */
@@ -72,11 +74,17 @@ export async function handleLinks(
   // ── Public link page (no auth) — GET /api/links/public/:streamerId ──────
   if (seg[0] === 'public') {
     const sid = seg[1];
-    if (!sid || method !== 'GET') return error('Not found', 404, request, env);
+    if (!sid) return error('Not found', 404, request, env);
+    // Click beacon — POST /api/links/public/:streamerId/click/:linkId
+    if (seg[2] === 'click' && seg[3] && method === 'POST') {
+      await botSchema(supabase).rpc('click_profile_link', { p_streamer_id: sid, p_link_id: seg[3] });
+      return json({ ok: true }, request, env);
+    }
+    if (method !== 'GET') return error('Not found', 404, request, env);
     const bot = botSchema(supabase);
     const { data: links } = await bot
       .from('profile_links')
-      .select('label, url, icon')
+      .select('id, label, url, icon')
       .eq('streamer_id', sid)
       .eq('enabled', true)
       .order('sort', { ascending: true })
