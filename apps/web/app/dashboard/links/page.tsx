@@ -5,17 +5,10 @@ import { cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 import LinkModal, { ProfileLink } from '../../../components/dashboard/LinkModal';
 import { LinkIcon } from '../../../components/LinkIcon';
+import { LinksPageView, Owner, PageStyle } from '../../../components/LinksPageView';
 import { WALLPAPERS } from '@/lib/link-wallpapers';
 
 interface LinkRow extends ProfileLink { id: string; clicks?: number; }
-interface PageStyle {
-    accent: string | null;
-    buttonStyle: 'glass' | 'solid' | 'outline';
-    shape: 'rounded' | 'pill' | 'sharp';
-    wallpaper: string;
-    title: string | null;
-    bio: string | null;
-}
 
 export default function LinksPage() {
     const [links, setLinks] = useState<LinkRow[]>([]);
@@ -24,24 +17,30 @@ export default function LinksPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<LinkRow | undefined>(undefined);
     const [style, setStyle] = useState<PageStyle>({ accent: null, buttonStyle: 'glass', shape: 'rounded', wallpaper: 'default', title: null, bio: null });
+    const [owner, setOwner] = useState<Owner | null>(null);
     const styleSaveRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-    const [previewKey, setPreviewKey] = useState(0);
-    const bumpPreview = () => setPreviewKey((k) => k + 1);
     const LINKS = apiUrl('/api/links');
 
     const load = async () => {
         const r = await fetch(LINKS, { credentials: 'include' }).then((x) => x.json()).catch(() => ({}));
         setLinks(Array.isArray(r.links) ? r.links : []);
-        bumpPreview();
     };
 
     useEffect(() => {
         (async () => {
             setLoading(true);
             const me = await fetch(apiUrl('/api/user/me'), { credentials: 'include' }).then((r) => r.json()).catch(() => ({}));
-            setStreamerId(me?.tenantId ?? me?.id ?? '');
+            const sid = me?.tenantId ?? me?.id ?? '';
+            setStreamerId(sid);
             const s = await fetch(`${LINKS}/settings`, { credentials: 'include' }).then((r) => r.json()).catch(() => ({}));
             if (s?.settings) setStyle(s.settings);
+            // Owner branding (avatar/name/handle) for the live preview.
+            if (sid) {
+                fetch(apiUrl(`/api/links/public/${sid}`))
+                    .then((r) => (r.ok ? r.json() : null))
+                    .then((d) => setOwner(d?.owner ?? null))
+                    .catch(() => undefined);
+            }
             await load();
             setLoading(false);
         })();
@@ -53,8 +52,7 @@ export default function LinksPage() {
         setStyle(next);
         clearTimeout(styleSaveRef.current);
         styleSaveRef.current = setTimeout(() => {
-            fetch(`${LINKS}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next), credentials: 'include' })
-                .then(bumpPreview);
+            fetch(`${LINKS}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next), credentials: 'include' });
         }, 400);
     };
 
@@ -77,11 +75,9 @@ export default function LinksPage() {
         if (!confirm('Delete this link?')) return;
         await fetch(`${LINKS}/${id}`, { method: 'DELETE', credentials: 'include' });
         setLinks((xs) => xs.filter((l) => l.id !== id));
-        bumpPreview();
     };
     const persistOrder = (list: LinkRow[]) =>
-        fetch(`${LINKS}/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: list.map((l) => l.id) }), credentials: 'include' })
-            .then(bumpPreview);
+        fetch(`${LINKS}/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: list.map((l) => l.id) }), credentials: 'include' });
     const move = (index: number, dir: -1 | 1) => {
         const next = [...links];
         const swap = index + dir;
@@ -251,15 +247,15 @@ export default function LinksPage() {
             <LinkModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={save} initialData={editing} />
         </div>
 
-        {/* ── Live preview (Linktree-style phone frame) ── */}
-        {streamerId && (
-            <div className="hidden lg:block sticky top-24">
-                <div className="mx-auto w-[330px] h-[640px] rounded-[2.75rem] border-[6px] border-white/10 bg-black overflow-hidden shadow-2xl shadow-black/60">
-                    <iframe key={previewKey} src={`/links/${streamerId}`} className="w-full h-full border-0" title="Live preview" />
+        {/* ── Live preview (Linktree-style phone frame, renders in-place) ── */}
+        <div className="hidden lg:block sticky top-24">
+            <div className="mx-auto w-[330px] h-[640px] rounded-[2.75rem] border-[6px] border-white/10 bg-black overflow-hidden shadow-2xl shadow-black/60">
+                <div className="w-full h-full overflow-y-auto flex flex-col [scrollbar-width:none]">
+                    <LinksPageView owner={owner} style={style} links={links.filter((l) => l.enabled)} loading={loading} />
                 </div>
-                <p className="text-center text-[10px] font-black uppercase tracking-widest text-zinc-600 mt-3">Live preview</p>
             </div>
-        )}
+            <p className="text-center text-[10px] font-black uppercase tracking-widest text-zinc-600 mt-3">Live preview</p>
+        </div>
         </div>
     );
 }
