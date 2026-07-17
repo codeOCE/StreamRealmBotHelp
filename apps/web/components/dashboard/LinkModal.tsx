@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { LinkIcon, linkMeta } from '../LinkIcon';
 
 export interface ProfileLink {
     id?: string;
@@ -58,21 +59,41 @@ export default function LinkModal({ isOpen, onClose, onSave, initialData }: Prop
                 </div>
 
                 <form onSubmit={submit} className="p-6 space-y-4">
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-zinc-400 block">URL</label>
+                        <input
+                            required autoFocus type="text" value={url}
+                            onChange={(e) => setUrl(e.target.value)}
+                            onBlur={() => {
+                                if (label.trim()) return;
+                                const meta = linkMeta(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`);
+                                if (meta) setLabel(meta.name ?? meta.host);
+                            }}
+                            className="void-input" placeholder="https://discord.gg/…"
+                        />
+                    </div>
+
                     <div className="flex gap-3">
                         <div className="space-y-1.5 w-20 shrink-0">
                             <label className="text-xs font-semibold text-zinc-400 block">Icon</label>
-                            <input type="text" value={icon} onChange={(e) => setIcon(e.target.value)} className="void-input text-center text-lg" placeholder="🔗" maxLength={4} />
+                            <div className="relative">
+                                <input type="text" value={icon} onChange={(e) => setIcon(e.target.value)} className="void-input text-center text-lg" placeholder="" maxLength={4} />
+                                {!icon.trim() && url.trim() && (
+                                    <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <LinkIcon url={/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`} size={20} />
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <div className="space-y-1.5 flex-1">
                             <label className="text-xs font-semibold text-zinc-400 block">Label</label>
-                            <input required autoFocus type="text" value={label} onChange={(e) => setLabel(e.target.value)} className="void-input" placeholder="Discord" maxLength={80} />
+                            <input required type="text" value={label} onChange={(e) => setLabel(e.target.value)} className="void-input" placeholder="Discord" maxLength={80} />
                         </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-400 block">URL</label>
-                        <input required type="text" value={url} onChange={(e) => setUrl(e.target.value)} className="void-input" placeholder="https://discord.gg/…" />
-                    </div>
+                    <p className="text-[11px] text-zinc-600 leading-relaxed">
+                        Leave the icon blank to use the site&apos;s own icon automatically, or type an emoji to override it.
+                    </p>
 
                     <div className="flex gap-3 pt-1">
                         <button type="button" onClick={onClose} className="saas-button-secondary flex-1">Cancel</button>

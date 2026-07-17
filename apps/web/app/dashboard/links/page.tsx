@@ -1,11 +1,17 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 import LinkModal, { ProfileLink } from '../../../components/dashboard/LinkModal';
+import { LinkIcon } from '../../../components/LinkIcon';
 
 interface LinkRow extends ProfileLink { id: string; }
+interface PageStyle {
+    accent: string | null;
+    buttonStyle: 'glass' | 'solid' | 'outline';
+    shape: 'rounded' | 'pill' | 'sharp';
+}
 
 export default function LinksPage() {
     const [links, setLinks] = useState<LinkRow[]>([]);
@@ -13,6 +19,8 @@ export default function LinksPage() {
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<LinkRow | undefined>(undefined);
+    const [style, setStyle] = useState<PageStyle>({ accent: null, buttonStyle: 'glass', shape: 'rounded' });
+    const styleSaveRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const LINKS = apiUrl('/api/links');
 
     const load = async () => {
@@ -25,10 +33,22 @@ export default function LinksPage() {
             setLoading(true);
             const me = await fetch(apiUrl('/api/user/me'), { credentials: 'include' }).then((r) => r.json()).catch(() => ({}));
             setStreamerId(me?.tenantId ?? me?.id ?? '');
+            const s = await fetch(`${LINKS}/settings`, { credentials: 'include' }).then((r) => r.json()).catch(() => ({}));
+            if (s?.settings) setStyle(s.settings);
             await load();
             setLoading(false);
         })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Debounced save — the color input fires on every drag tick.
+    const saveStyle = (next: PageStyle) => {
+        setStyle(next);
+        clearTimeout(styleSaveRef.current);
+        styleSaveRef.current = setTimeout(() => {
+            fetch(`${LINKS}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next), credentials: 'include' });
+        }, 400);
+    };
 
     const save = async (link: ProfileLink) => {
         try {
@@ -77,9 +97,47 @@ export default function LinksPage() {
                         <p className="text-[10px] font-black text-zinc-400">Your link page</p>
                         <p className="text-xs text-zinc-500 truncate">{shareUrl}</p>
                     </div>
+                    <a href={shareUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase bg-white/5 text-zinc-300 border border-white/10 hover:bg-white/10 transition-colors shrink-0">Preview</a>
                     <button onClick={() => navigator.clipboard?.writeText(shareUrl)} className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase bg-brand-primary/15 text-brand-primary border border-brand-primary/20 hover:bg-brand-primary/25 transition-colors shrink-0">Copy</button>
                 </div>
             )}
+
+            {/* ── Page style ── */}
+            <div className="glass-card rounded-2xl p-5 border border-white/5 flex items-center gap-6 flex-wrap">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest shrink-0">Page style</p>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-zinc-500">Accent</span>
+                    <input
+                        type="color"
+                        value={style.accent ?? '#3faaff'}
+                        onChange={(e) => saveStyle({ ...style, accent: e.target.value })}
+                        className="w-8 h-8 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                        aria-label="Accent color"
+                    />
+                    {style.accent && (
+                        <button onClick={() => saveStyle({ ...style, accent: null })} className="text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-colors cursor-pointer">Use brand color</button>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-zinc-500">Buttons</span>
+                    <div className="flex gap-1 bg-white/[0.03] rounded-lg p-1">
+                        {(['glass', 'solid', 'outline'] as const).map((b) => (
+                            <button key={b} onClick={() => saveStyle({ ...style, buttonStyle: b })} className={cn('px-3 py-1 rounded-md text-[10px] font-black transition-colors cursor-pointer', style.buttonStyle === b ? 'bg-brand-primary text-white' : 'text-zinc-500 hover:text-white')}>{b}</button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-semibold text-zinc-500">Shape</span>
+                    <div className="flex gap-1 bg-white/[0.03] rounded-lg p-1">
+                        {(['rounded', 'pill', 'sharp'] as const).map((s) => (
+                            <button key={s} onClick={() => saveStyle({ ...style, shape: s })} className={cn('px-3 py-1 rounded-md text-[10px] font-black transition-colors cursor-pointer', style.shape === s ? 'bg-brand-primary text-white' : 'text-zinc-500 hover:text-white')}>{s}</button>
+                        ))}
+                    </div>
+                </div>
+            </div>
 
             <div className="space-y-3">
                 {loading ? (
@@ -100,7 +158,7 @@ export default function LinksPage() {
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
                         </div>
-                        <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/5 flex items-center justify-center text-lg shrink-0">{l.icon || '🔗'}</div>
+                        <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/5 flex items-center justify-center shrink-0"><LinkIcon icon={l.icon} url={l.url} size={20} /></div>
                         <div className="min-w-0 flex-1">
                             <h3 className="font-black text-white truncate text-sm">{l.label}</h3>
                             <p className="text-[11px] text-zinc-500 truncate">{l.url}</p>

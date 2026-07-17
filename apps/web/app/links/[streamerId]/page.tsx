@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 import { PublicNav } from '@/components/public/PublicNav';
+import { LinkIcon } from '@/components/LinkIcon';
 
 interface LinkItem {
   label: string;
@@ -18,16 +20,24 @@ interface Owner {
   color: string | null;
   tagline: string | null;
 }
+interface PageStyle {
+  accent: string | null;
+  buttonStyle: 'glass' | 'solid' | 'outline';
+  shape: 'rounded' | 'pill' | 'sharp';
+}
 
 /**
  * Viewer-facing link-in-bio page. Streamer-first identity card (shared with
  * the leaderboard/shop/commands pages via PublicNav) + a stack of link
- * buttons. Share link is `/links/<streamerId>`.
+ * buttons styled by the creator (accent, button style, shape). Icons resolve
+ * automatically from each link's favicon unless the creator set an emoji.
+ * Share link is `/links/<streamerId>`.
  */
 export default function PublicLinksPage() {
   const { streamerId } = useParams<{ streamerId: string }>();
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [owner, setOwner] = useState<Owner | null>(null);
+  const [style, setStyle] = useState<PageStyle | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,12 +47,19 @@ export default function PublicLinksPage() {
       .then((d) => {
         setLinks(Array.isArray(d?.links) ? d.links : []);
         setOwner(d?.owner ?? null);
+        setStyle(d?.settings ?? null);
       })
       .catch(() => undefined)
       .finally(() => setLoading(false));
   }, [streamerId]);
 
-  const accent = owner?.color || '#3faaff';
+  const accent = style?.accent || owner?.color || '#3faaff';
+  const shapeCls = style?.shape === 'pill' ? 'rounded-full' : style?.shape === 'sharp' ? 'rounded-lg' : 'rounded-2xl';
+  const btn = style?.buttonStyle ?? 'glass';
+
+  // Solid buttons need readable text on light accents (e.g. yellow).
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(accent.slice(i, i + 2), 16));
+  const solidText = 0.299 * r + 0.587 * g + 0.114 * b > 160 ? '#0a0a0f' : '#ffffff';
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -73,7 +90,7 @@ export default function PublicLinksPage() {
           {/* ── Links ── */}
           <div className="space-y-3">
             {loading ? (
-              [0, 1, 2].map((i) => <div key={i} className="h-16 skeleton rounded-2xl" />)
+              [0, 1, 2].map((i) => <div key={i} className={cn('h-16 skeleton', shapeCls)} />)
             ) : links.length === 0 ? (
               <div className="glass-card rounded-2xl py-24 text-center">
                 <p className="text-zinc-500 font-medium text-sm">No links yet — check back soon.</p>
@@ -84,11 +101,22 @@ export default function PublicLinksPage() {
                 href={l.url}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="glass-card flex items-center gap-4 rounded-2xl px-6 py-5 border border-white/5 hover:border-white/20 transition-colors group"
+                className={cn(
+                  'flex items-center gap-4 px-6 py-5 transition-all group',
+                  shapeCls,
+                  btn === 'glass' && 'glass-card border border-white/5 hover:border-white/20',
+                  btn === 'solid' && 'hover:brightness-110',
+                  btn === 'outline' && 'border-2 bg-transparent hover:bg-white/[0.03]',
+                )}
+                style={
+                  btn === 'solid' ? { background: accent, color: solidText }
+                  : btn === 'outline' ? { borderColor: `${accent}55` }
+                  : undefined
+                }
               >
-                <span className="text-2xl shrink-0">{l.icon || '🔗'}</span>
-                <span className="font-black text-white tracking-tight flex-1 min-w-0 truncate">{l.label}</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-600 group-hover:text-white transition-colors shrink-0"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+                <span className="shrink-0 flex items-center justify-center w-7"><LinkIcon icon={l.icon} url={l.url} size={26} /></span>
+                <span className={cn('font-black tracking-tight flex-1 min-w-0 truncate', btn !== 'solid' && 'text-white')}>{l.label}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={cn('transition-colors shrink-0', btn === 'solid' ? 'opacity-60' : 'text-zinc-600 group-hover:text-white')}><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
               </a>
             ))}
           </div>

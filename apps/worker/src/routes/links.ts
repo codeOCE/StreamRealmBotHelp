@@ -13,7 +13,9 @@ import { error, json } from '../lib/response';
  *   PATCH  /api/links/:id/toggle       enable/disable
  *   DELETE /api/links/:id              delete
  *   POST   /api/links/reorder          { order: string[] } — sets sort by array position
- *   GET    /api/links/public/:streamerId  public, enabled links only (no auth)
+ *   GET    /api/links/settings         page style (accent/buttonStyle/shape)
+ *   PUT    /api/links/settings         update page style
+ *   GET    /api/links/public/:streamerId  public, enabled links + style (no auth)
  */
 
 interface LinkRow {
@@ -47,6 +49,17 @@ function linkToDb(body: Record<string, any>, partial: boolean): Record<string, a
   return out;
 }
 
+const BUTTON_STYLES = ['glass', 'solid', 'outline'] as const;
+const SHAPES = ['rounded', 'pill', 'sharp'] as const;
+
+function settingsToApi(row: { accent?: string | null; button_style?: string; shape?: string } | null) {
+  return {
+    accent: row?.accent ?? null,
+    buttonStyle: row?.button_style ?? 'glass',
+    shape: row?.shape ?? 'rounded',
+  };
+}
+
 export async function handleLinks(
   request: Request,
   env: Env,
@@ -69,13 +82,37 @@ export async function handleLinks(
       .order('sort', { ascending: true })
       .limit(100);
     const owner = await getPublicOwner(supabase, sid);
-    return json({ owner, links: links ?? [] }, request, env);
+    const { data: style } = await bot.from('links_pages').select('accent, button_style, shape').eq('streamer_id', sid).maybeSingle();
+    return json({ owner, links: links ?? [], settings: settingsToApi(style) }, request, env);
   }
 
   const user = await getUserFromSession(request, env, supabase);
   if (!user) return error('Not authenticated', 401, request, env);
   const streamerId = user.id;
   const bot = botSchema(supabase);
+
+  if (seg[0] === 'settings') {
+    if (method === 'GET') {
+      const { data } = await bot.from('links_pages').select('accent, button_style, shape').eq('streamer_id', streamerId).maybeSingle();
+      return json({ settings: settingsToApi(data) }, request, env);
+    }
+    if (method === 'PUT') {
+      const body = (await request.json().catch(() => ({}))) as Record<string, any>;
+      const accent = body.accent ? String(body.accent) : null;
+      if (accent && !/^#[0-9a-fA-F]{6}$/.test(accent)) return error('Invalid accent color', 400, request, env);
+      const row = {
+        streamer_id: streamerId,
+        accent,
+        button_style: BUTTON_STYLES.includes(body.buttonStyle) ? body.buttonStyle : 'glass',
+        shape: SHAPES.includes(body.shape) ? body.shape : 'rounded',
+        updated_at: new Date().toISOString(),
+      };
+      const { error: upErr } = await bot.from('links_pages').upsert(row);
+      if (upErr) return error('Could not save style', 400, request, env);
+      return json({ ok: true }, request, env);
+    }
+    return error('Method not allowed', 405, request, env);
+  }
 
   if (seg[0] === 'reorder' && method === 'POST') {
     const body = (await request.json().catch(() => ({}))) as { order?: string[] };
