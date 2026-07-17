@@ -1,4 +1,8 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { isVaultHost } from '@/lib/vault';
+import { VaultChrome } from '@/components/vault-chrome';
+import { VaultBrowse, type VaultSearchParams } from '@/components/vault-browse';
 
 /* Hallmark · macrostructure: editorial spec-list (left-biased hero + divided feature rows)
  * genre: modern-minimal · tone: confident, streamer-native · anchor hue: Castle blue #3faaff
@@ -28,7 +32,32 @@ const features = [
   { icon: 'clock', name: 'Timers', blurb: 'Rotating chat messages on the intervals and conditions you set, so plugs run themselves.' },
 ];
 
-export default function Home() {
+// app.creatorcastle.gg and emotes.creatorcastle.gg are the same Next.js deploy
+// (no edge middleware support on OpenNext-Cloudflare in Next 16 — see lib/vault.ts),
+// so the root route branches on the Host header instead of using a rewrite.
+export async function generateMetadata(): Promise<Metadata> {
+  if (!(await isVaultHost())) return {};
+  return {
+    title: 'Castle Vault — Custom Twitch Emotes',
+    description:
+      'Browse free custom Twitch emotes shared by Creator Castle streamers — animated, static, and overlay emotes, searchable by name and tag.',
+  };
+}
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<VaultSearchParams>;
+}) {
+  if (await isVaultHost()) {
+    const sp = await searchParams;
+    return (
+      <VaultChrome>
+        <VaultBrowse sp={sp} />
+      </VaultChrome>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Nav — wordmark left, single link + real CTA right */}

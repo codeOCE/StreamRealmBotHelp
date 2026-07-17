@@ -6,8 +6,10 @@
   // Served at app.creatorcastle.gg. The apex (creatorcastle.gg) stays on the
   // separate coming-soon Pages deploy — different hostname, no conflict.
   //
-  // emotes.creatorcastle.gg is routed to the SAME worker — middleware.ts rewrites
-  // by hostname to app/emotes-site, the public SEO-facing emote vault.
+  // emotes.creatorcastle.gg is routed to the SAME worker (the public SEO-facing
+  // emote vault). No edge middleware/proxy support on OpenNext-Cloudflare with
+  // Next 16, so app/page.tsx + app/e/[id]/page.tsx branch on the Host header
+  // directly instead of rewriting — see lib/vault.ts (isVaultHost).
   "name": "creatorcastle-web",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-08",
