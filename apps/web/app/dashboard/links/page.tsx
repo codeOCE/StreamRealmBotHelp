@@ -5,14 +5,14 @@ import { cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 import LinkModal, { ProfileLink } from '../../../components/dashboard/LinkModal';
 import { LinkIcon } from '../../../components/LinkIcon';
+import { WALLPAPERS } from '@/lib/link-wallpapers';
 
 interface LinkRow extends ProfileLink { id: string; clicks?: number; }
 interface PageStyle {
     accent: string | null;
     buttonStyle: 'glass' | 'solid' | 'outline';
     shape: 'rounded' | 'pill' | 'sharp';
-    bgColor: string | null;
-    bgImage: string | null;
+    wallpaper: string;
     title: string | null;
     bio: string | null;
 }
@@ -23,7 +23,7 @@ export default function LinksPage() {
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<LinkRow | undefined>(undefined);
-    const [style, setStyle] = useState<PageStyle>({ accent: null, buttonStyle: 'glass', shape: 'rounded', bgColor: null, bgImage: null, title: null, bio: null });
+    const [style, setStyle] = useState<PageStyle>({ accent: null, buttonStyle: 'glass', shape: 'rounded', wallpaper: 'default', title: null, bio: null });
     const styleSaveRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const [previewKey, setPreviewKey] = useState(0);
     const bumpPreview = () => setPreviewKey((k) => k + 1);
@@ -175,23 +175,28 @@ export default function LinksPage() {
                         <label className="text-xs font-semibold text-zinc-400 block">Bio</label>
                         <input type="text" value={style.bio ?? ''} maxLength={200} onChange={(e) => saveStyle({ ...style, bio: e.target.value || null })} className="void-input" placeholder="Defaults to your tagline" />
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-400 block">Wallpaper image URL</label>
-                        <input type="text" value={style.bgImage ?? ''} onChange={(e) => saveStyle({ ...style, bgImage: e.target.value.trim() || null })} className="void-input" placeholder="https://… (replaces the banner)" />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-zinc-400 block">Wallpaper color</label>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="color"
-                                value={style.bgColor ?? '#0a0a0f'}
-                                onChange={(e) => saveStyle({ ...style, bgColor: e.target.value })}
-                                className="w-9 h-9 rounded-lg border border-white/10 bg-transparent cursor-pointer"
-                                aria-label="Wallpaper color"
-                            />
-                            {style.bgColor && (
-                                <button onClick={() => saveStyle({ ...style, bgColor: null })} className="text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-colors cursor-pointer">Clear</button>
-                            )}
+                    <div className="space-y-1.5 sm:col-span-2">
+                        <label className="text-xs font-semibold text-zinc-400 block">Wallpaper</label>
+                        <div className="flex gap-2 flex-wrap">
+                            {WALLPAPERS.map((w) => (
+                                <button
+                                    key={w.key}
+                                    onClick={() => saveStyle({ ...style, wallpaper: w.key })}
+                                    className={cn(
+                                        'w-16 flex flex-col items-center gap-1 cursor-pointer group',
+                                    )}
+                                    aria-label={`Wallpaper: ${w.name}`}
+                                >
+                                    <span
+                                        className={cn(
+                                            'w-14 h-20 rounded-xl border-2 transition-all block',
+                                            style.wallpaper === w.key ? 'border-brand-primary scale-105' : 'border-white/10 group-hover:border-white/30',
+                                        )}
+                                        style={{ background: w.css(style.accent ?? '#3faaff') }}
+                                    />
+                                    <span className={cn('text-[9px] font-black uppercase tracking-wide', style.wallpaper === w.key ? 'text-white' : 'text-zinc-600 group-hover:text-zinc-400')}>{w.name}</span>
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>

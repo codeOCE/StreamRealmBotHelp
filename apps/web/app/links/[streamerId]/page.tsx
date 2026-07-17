@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
 import { LinkIcon } from '@/components/LinkIcon';
+import { wallpaperCss } from '@/lib/link-wallpapers';
 
 interface LinkItem {
   id: string;
@@ -24,8 +25,7 @@ interface PageStyle {
   accent: string | null;
   buttonStyle: 'glass' | 'solid' | 'outline';
   shape: 'rounded' | 'pill' | 'sharp';
-  bgColor: string | null;
-  bgImage: string | null;
+  wallpaper: string;
   title: string | null;
   bio: string | null;
 }
@@ -71,14 +71,9 @@ export default function PublicLinksPage() {
   return (
     <div
       className="min-h-screen bg-background text-foreground"
-      style={
-        style?.bgImage ? { backgroundImage: `url(${style.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }
-        : style?.bgColor ? { background: style.bgColor }
-        : { background: `radial-gradient(700px at 50% -150px, ${accent}2e, transparent), var(--color-background)` }
-      }
+      style={{ background: wallpaperCss(style?.wallpaper, accent) }}
     >
-      {/* Readability scrim over image wallpapers */}
-      <div className={cn('min-h-screen flex flex-col', style?.bgImage && 'bg-black/60')}>
+      <div className="min-h-screen flex flex-col">
         <main className="w-full max-w-xl mx-auto px-6 pt-14 sm:pt-20 pb-10 flex flex-col items-center flex-1">
           {/* ── Profile ── */}
           <div className="w-24 h-24 rounded-full overflow-hidden bg-surface-base shadow-2xl shadow-black/40" style={{ border: `3px solid ${accent}` }}>
@@ -133,9 +128,10 @@ export default function PublicLinksPage() {
           </div>
         </main>
 
-        <footer className="pb-8 text-center">
-          <a href="https://app.creatorcastle.gg" className="text-[11px] font-black uppercase tracking-widest text-zinc-600 hover:text-zinc-400 transition-colors">
-            🏰 CreatorCastle
+        <footer className="pb-8 flex justify-center">
+          <a href="https://app.creatorcastle.gg" className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors">
+            <img src="https://cdn.codeoce.com/logo/logo_white.png" alt="" className="w-5 h-5 object-contain opacity-70" />
+            <span>Powered by Creator<span style={{ color: accent }}>Castle</span></span>
           </a>
         </footer>
       </div>

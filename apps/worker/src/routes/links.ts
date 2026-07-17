@@ -54,15 +54,17 @@ function linkToDb(body: Record<string, any>, partial: boolean): Record<string, a
 const BUTTON_STYLES = ['glass', 'solid', 'outline'] as const;
 const SHAPES = ['rounded', 'pill', 'sharp'] as const;
 
-const SETTINGS_COLS = 'accent, button_style, shape, bg_color, bg_image, title, bio';
+// Preset keys mirror apps/web/lib/link-wallpapers.ts
+const WALLPAPERS = ['default', 'midnight', 'royal', 'ember', 'forest', 'ocean', 'sunset', 'gold', 'aurora', 'slate'] as const;
+
+const SETTINGS_COLS = 'accent, button_style, shape, wallpaper, title, bio';
 
 function settingsToApi(row: Record<string, any> | null) {
   return {
     accent: row?.accent ?? null,
     buttonStyle: row?.button_style ?? 'glass',
     shape: row?.shape ?? 'rounded',
-    bgColor: row?.bg_color ?? null,
-    bgImage: row?.bg_image ?? null,
+    wallpaper: row?.wallpaper ?? 'default',
     title: row?.title ?? null,
     bio: row?.bio ?? null,
   };
@@ -114,17 +116,12 @@ export async function handleLinks(
       const body = (await request.json().catch(() => ({}))) as Record<string, any>;
       const accent = body.accent ? String(body.accent) : null;
       if (accent && !/^#[0-9a-fA-F]{6}$/.test(accent)) return error('Invalid accent color', 400, request, env);
-      const bgColor = body.bgColor ? String(body.bgColor) : null;
-      if (bgColor && !/^#[0-9a-fA-F]{6}$/.test(bgColor)) return error('Invalid background color', 400, request, env);
-      const bgImage = body.bgImage ? String(body.bgImage).trim() : null;
-      if (bgImage && !/^https?:\/\//i.test(bgImage)) return error('Invalid background image URL', 400, request, env);
       const row = {
         streamer_id: streamerId,
         accent,
         button_style: BUTTON_STYLES.includes(body.buttonStyle) ? body.buttonStyle : 'glass',
         shape: SHAPES.includes(body.shape) ? body.shape : 'rounded',
-        bg_color: bgColor,
-        bg_image: bgImage ? bgImage.slice(0, 500) : null,
+        wallpaper: WALLPAPERS.includes(body.wallpaper) ? body.wallpaper : 'default',
         title: body.title ? String(body.title).slice(0, 80) : null,
         bio: body.bio ? String(body.bio).slice(0, 200) : null,
         updated_at: new Date().toISOString(),
