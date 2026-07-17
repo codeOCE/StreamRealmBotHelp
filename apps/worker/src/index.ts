@@ -24,6 +24,7 @@ import { handleQuotes } from './routes/quotes';
 import { handleTips } from './routes/tips';
 import { handleTipPublic } from './routes/tip-public';
 import { handleCosmetics } from './routes/cosmetics';
+import { handleEmotes } from './routes/emotes';
 import { handleIntegrationModules } from './integrations/router';
 import { RealtimeHub } from './realtime';
 import { CreatorTokenDO } from './token-do';
@@ -160,6 +161,11 @@ export default {
       // public, CORS-open read at /api/cosmetics/public/channel/:channel.
       if (path === '/api/cosmetics' || path.startsWith('/api/cosmetics/')) {
         return handleCosmetics(request, env, createSupabaseClient(env), path, method);
+      }
+      // Custom chat emotes (7TV/BTTV-style). Public, CORS-open read at
+      // /api/emotes/public/channel/:channel for the browser extension.
+      if (path === '/api/emotes' || path.startsWith('/api/emotes/')) {
+        return handleEmotes(request, env, createSupabaseClient(env), path, method);
       }
       // Bot connect/disconnect (chat EventSub subscription lifecycle).
       if (path.startsWith('/api/integrations/bot/')) {

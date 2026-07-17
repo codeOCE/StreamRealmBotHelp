@@ -12,7 +12,8 @@ export function getWorkerOrigin(): string {
   const explicit = process.env.NEXT_PUBLIC_WORKER_URL?.replace(/\/$/, '');
   if (explicit) return explicit;
   if (typeof window !== 'undefined') return '';
-  return process.env.WORKER_SSR_URL?.replace(/\/$/, '') || 'http://127.0.0.1:8787';
+  if (process.env.WORKER_SSR_URL) return process.env.WORKER_SSR_URL.replace(/\/$/, '');
+  return process.env.NODE_ENV === 'production' ? 'https://api.creatorcastle.gg' : 'http://127.0.0.1:8787';
 }
 
 /** @deprecated Use getWorkerOrigin() — kept for imports that expect a string getter. */

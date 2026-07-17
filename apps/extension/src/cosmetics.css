@@ -45,3 +45,20 @@
 .cc-paint--shimmer { animation: cc-paint-shimmer 4s linear infinite; }
 .cc-paint--sheen { animation: cc-paint-sheen 3.5s ease-in-out infinite; }
 .cc-paint--rainbow { animation: cc-paint-rainbow 6s linear infinite; }
+
+/* Custom channel emote — an <img> swapped in for its text code. Height is set
+   inline from the emote's size; width auto keeps wide/animated emotes correct. */
+.cc-emote {
+  display: inline-block;
+  width: auto;
+  vertical-align: middle;
+  margin: -2px 1px;
+  object-fit: contain;
+}
+
+/* Zero-width ("overlaying") emote — sits on top of the preceding emote. */
+.cc-emote--zw {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}

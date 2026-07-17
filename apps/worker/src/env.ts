@@ -58,6 +58,13 @@ export interface Env {
   BOT_OWNER_TWITCH_ID?: string;
 
   /**
+   * Comma-separated Twitch user ids allowed to moderate the shared emote
+   * directory (approve/reject public emote submissions). When unset, no one can
+   * — channel-private emotes still work without any approval. See routes/emotes.ts.
+   */
+  PLATFORM_ADMIN_IDS?: string;
+
+  /**
    * One-time setup secret for seeding the platform bot token. When set, visiting
    * /auth/bot?key=<secret> starts the bot OAuth with NO app session required —
    * authorize while logged into Twitch as the bot account. The standard way to

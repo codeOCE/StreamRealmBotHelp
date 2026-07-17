@@ -34,6 +34,7 @@ import { GIVEAWAY_TRIGGERS, handleGiveawayCommand } from './giveaway';
 import { POLL_TRIGGERS, handlePollCommand } from './poll';
 import { parseVariables, normalizeSyntax, type VariableResolvers, type ParseContext } from './variables';
 import { evaluateRules, type ModRule, type UserLevel } from './moderation';
+import { buildEmoteMap, emoteUrlsInText, type EmoteRow } from './emotes';
 import { shieldReason, type ShieldSettings } from './shield';
 import {
   type ChatEvent,
@@ -949,16 +950,29 @@ async function addXp(supabase: SupabaseClient, streamerId: string, ev: ChatEvent
 
 /** Feed chat widgets: broadcast the message to each of the streamer's overlays. */
 async function emitToOverlays(env: Env, supabase: SupabaseClient, streamerId: string, ev: ChatEvent): Promise<void> {
-  const { data: overlays } = await botSchema(supabase)
-    .from('overlays')
-    .select('id')
-    .eq('streamer_id', streamerId);
+  const bot = botSchema(supabase);
+  // Overlays + this channel's custom emote set fetched together — both are only
+  // needed when the channel actually has overlays to feed.
+  const [{ data: overlays }, { data: own }, { data: links }] = await Promise.all([
+    bot.from('overlays').select('id').eq('streamer_id', streamerId),
+    bot.from('emotes').select('id, code, image_url, width, animated, zero_width').eq('owner_id', streamerId),
+    bot.from('channel_emotes').select('emotes(id, code, image_url, width, animated, zero_width, visibility, status)').eq('streamer_id', streamerId),
+  ]);
   if (!overlays?.length) return;
+
+  // Custom emote codes typed in the message → image URLs, appended to Twitch's
+  // native emotes so the emote-wall rains both. Own codes win collisions.
+  const added = (links ?? [])
+    .map((r: any) => r.emotes)
+    .filter((e: any) => e && e.visibility === 'public' && e.status === 'approved') as EmoteRow[];
+  const emoteMap = buildEmoteMap((own ?? []) as EmoteRow[], added);
+  const customUrls = emoteUrlsInText(ev.text, emoteMap);
+
   const payload = {
     username: ev.chatterName,
     message: ev.text,
     badges: [...ev.badges],
-    emotes: ev.emotes ?? [],
+    emotes: [...(ev.emotes ?? []), ...customUrls],
   };
   await Promise.allSettled(overlays.map((o: any) => broadcast(env, `overlay:${o.id}`, 'chat', payload)));
 }

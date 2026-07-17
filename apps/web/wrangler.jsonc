@@ -5,6 +5,9 @@
   //
   // Served at app.creatorcastle.gg. The apex (creatorcastle.gg) stays on the
   // separate coming-soon Pages deploy — different hostname, no conflict.
+  //
+  // emotes.creatorcastle.gg is routed to the SAME worker — middleware.ts rewrites
+  // by hostname to app/emotes-site, the public SEO-facing emote vault.
   "name": "creatorcastle-web",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-08",
@@ -16,7 +19,8 @@
     "binding": "ASSETS"
   },
   "routes": [
-    { "pattern": "app.creatorcastle.gg", "custom_domain": true, "zone_name": "creatorcastle.gg" }
+    { "pattern": "app.creatorcastle.gg", "custom_domain": true, "zone_name": "creatorcastle.gg" },
+    { "pattern": "emotes.creatorcastle.gg", "custom_domain": true, "zone_name": "creatorcastle.gg" }
   ],
   "observability": {
     "enabled": true

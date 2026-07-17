@@ -28,6 +28,7 @@ const SIDEBAR_NAV = [
   { href: '/dashboard/giveaways',    label: 'Giveaways',    icon: 'gift'                  },
   { href: '/dashboard/polls',        label: 'Polls',        icon: 'poll'                  },
   { href: '/dashboard/cosmetics',    label: 'Cosmetics',    icon: 'palette'               },
+  { href: '/dashboard/emotes',       label: 'Emotes',       icon: 'smile'                 },
   { href: '/dashboard/xp',           label: 'Leaderboard',  icon: 'trophy'                },
   { href: '/dashboard/interactions', label: 'Interactions', icon: 'zap'                   },
   { href: '/dashboard/overlays',     label: 'Overlays',     icon: 'layers'                },
@@ -382,6 +383,7 @@ function NavIcon({ name, className, style }: { name: string; className?: string;
     case 'poll':      return <svg {...props}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
     case 'heart':     return <svg {...props}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
     case 'palette':   return <svg {...props}><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996C19.495 15.394 22 12.89 22 9.95 22 5.59 17.51 2 12 2z"/></svg>;
+    case 'smile':     return <svg {...props}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>;
     case 'bar-chart': return <svg {...props}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
     case 'radar':     return <svg {...props}><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 12L8.5 5.5"/><circle cx="12" cy="12" r="3"/><path d="M12 12l6.5-1"/></svg>;
     case 'tool':      return <svg {...props}><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>;

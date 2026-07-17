@@ -55,6 +55,7 @@
   let channel = null;
   let cosmetics = {}; // id -> definition
   let users = {};     // login -> { badges:[ids], paint:id|null }
+  let emotes = {};    // code -> { url, w, animated }   (custom channel emotes)
   let observer = null;
   let observedContainer = null;
 
@@ -115,6 +116,55 @@
     return wrap.childNodes.length ? wrap : null;
   }
 
+  // ── Custom emotes ──────────────────────────────────────────────────────────
+  // Replace whole-word emote codes in a message's plain-text runs with images.
+  // Twitch wraps plain words in `.text-fragment` spans; native emotes, mentions
+  // and links are separate element nodes, so only touching TEXT nodes leaves
+  // them intact. Matching is case-sensitive on whitespace-delimited tokens.
+  function renderEmotes(line) {
+    if (!emotes || !Object.keys(emotes).length) return;
+    const frags = line.querySelectorAll('.text-fragment, [data-a-target="chat-message-text"]');
+    const scan = frags.length ? frags : [line.querySelector('.chat-line__message-body') || line];
+    scan.forEach((frag) => {
+      // Snapshot direct text-node children (replaceChild mutates the live list).
+      const textNodes = [];
+      frag.childNodes.forEach((n) => { if (n.nodeType === 3 && /\S/.test(n.nodeValue)) textNodes.push(n); });
+      textNodes.forEach(replaceEmotesInTextNode);
+    });
+  }
+
+  function replaceEmotesInTextNode(textNode) {
+    const parts = textNode.nodeValue.split(/(\s+)/); // keep the whitespace pieces
+    if (!parts.some((p) => emotes[p])) return;
+    const out = document.createDocumentFragment();
+    let lastEmoteImg = null; // for stacking zero-width (overlay) emotes
+    for (const p of parts) {
+      const e = emotes[p];
+      if (e && e.url) {
+        const img = document.createElement('img');
+        img.className = 'cc-emote';
+        img.src = e.url;
+        img.alt = p;
+        img.title = p;
+        img.style.height = (e.w || 28) + 'px';
+        // Zero-width ("overlaying") emotes stack on top of the previous emote,
+        // like 7TV. ponytail: overlaps the immediately preceding emote in this
+        // text run via negative margin; cross-node chains fall back to inline.
+        if (e.z && lastEmoteImg) {
+          img.className = 'cc-emote cc-emote--zw';
+          img.style.marginLeft = '-' + (lastEmoteImg.style.height || '28px');
+        } else {
+          lastEmoteImg = img;
+        }
+        out.appendChild(img);
+      } else {
+        if (/\S/.test(p)) lastEmoteImg = null; // a real word breaks the stack
+        out.appendChild(document.createTextNode(p));
+      }
+    }
+    textNode.parentNode.replaceChild(out, textNode);
+  }
+
   /** Find the username element within a chat line. */
   function findNameEl(line) {
     return (
@@ -141,6 +191,10 @@
     const nameEl = findNameEl(line);
     if (!nameEl) return;
     line.setAttribute(DONE_ATTR, '1');
+
+    // Emotes apply to every message, independent of who sent it — run before the
+    // wearer-only cosmetics gate below.
+    renderEmotes(line);
 
     const login = loginFromName(nameEl, line);
     if (!login) return;
@@ -274,7 +328,8 @@
       if (resp.disabled) warn('extension is disabled in the popup');
       cosmetics = resp.cosmetics || {};
       users = resp.users || {};
-      log(`loaded channel "${channel}":`, Object.keys(cosmetics).length, 'cosmetic(s),', Object.keys(users).length, 'wearer(s)');
+      emotes = resp.emotes || {};
+      log(`loaded channel "${channel}":`, Object.keys(cosmetics).length, 'cosmetic(s),', Object.keys(users).length, 'wearer(s),', Object.keys(emotes).length, 'emote(s)');
       if (DEBUG) log('wearer logins:', Object.keys(users).slice(0, 20));
       // New data → allow every line to be re-evaluated.
       tracked.clear();
@@ -292,6 +347,7 @@
       channel = ch;
       cosmetics = {};
       users = {};
+      emotes = {};
       tracked.clear();
       if (channel) loadCosmetics(true);
     }
@@ -309,6 +365,7 @@
       get channel() { return channel; },
       get cosmetics() { return cosmetics; },
       get users() { return users; },
+      get emotes() { return emotes; },
       get unmatchedLogins() { return [...seenLogins]; },
       reload: () => loadCosmetics(true),
       dump() {
