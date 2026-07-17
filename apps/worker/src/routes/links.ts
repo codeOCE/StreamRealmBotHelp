@@ -54,11 +54,17 @@ function linkToDb(body: Record<string, any>, partial: boolean): Record<string, a
 const BUTTON_STYLES = ['glass', 'solid', 'outline'] as const;
 const SHAPES = ['rounded', 'pill', 'sharp'] as const;
 
-function settingsToApi(row: { accent?: string | null; button_style?: string; shape?: string } | null) {
+const SETTINGS_COLS = 'accent, button_style, shape, bg_color, bg_image, title, bio';
+
+function settingsToApi(row: Record<string, any> | null) {
   return {
     accent: row?.accent ?? null,
     buttonStyle: row?.button_style ?? 'glass',
     shape: row?.shape ?? 'rounded',
+    bgColor: row?.bg_color ?? null,
+    bgImage: row?.bg_image ?? null,
+    title: row?.title ?? null,
+    bio: row?.bio ?? null,
   };
 }
 
@@ -90,7 +96,7 @@ export async function handleLinks(
       .order('sort', { ascending: true })
       .limit(100);
     const owner = await getPublicOwner(supabase, sid);
-    const { data: style } = await bot.from('links_pages').select('accent, button_style, shape').eq('streamer_id', sid).maybeSingle();
+    const { data: style } = await bot.from('links_pages').select(SETTINGS_COLS).eq('streamer_id', sid).maybeSingle();
     return json({ owner, links: links ?? [], settings: settingsToApi(style) }, request, env);
   }
 
@@ -101,18 +107,26 @@ export async function handleLinks(
 
   if (seg[0] === 'settings') {
     if (method === 'GET') {
-      const { data } = await bot.from('links_pages').select('accent, button_style, shape').eq('streamer_id', streamerId).maybeSingle();
+      const { data } = await bot.from('links_pages').select(SETTINGS_COLS).eq('streamer_id', streamerId).maybeSingle();
       return json({ settings: settingsToApi(data) }, request, env);
     }
     if (method === 'PUT') {
       const body = (await request.json().catch(() => ({}))) as Record<string, any>;
       const accent = body.accent ? String(body.accent) : null;
       if (accent && !/^#[0-9a-fA-F]{6}$/.test(accent)) return error('Invalid accent color', 400, request, env);
+      const bgColor = body.bgColor ? String(body.bgColor) : null;
+      if (bgColor && !/^#[0-9a-fA-F]{6}$/.test(bgColor)) return error('Invalid background color', 400, request, env);
+      const bgImage = body.bgImage ? String(body.bgImage).trim() : null;
+      if (bgImage && !/^https?:\/\//i.test(bgImage)) return error('Invalid background image URL', 400, request, env);
       const row = {
         streamer_id: streamerId,
         accent,
         button_style: BUTTON_STYLES.includes(body.buttonStyle) ? body.buttonStyle : 'glass',
         shape: SHAPES.includes(body.shape) ? body.shape : 'rounded',
+        bg_color: bgColor,
+        bg_image: bgImage ? bgImage.slice(0, 500) : null,
+        title: body.title ? String(body.title).slice(0, 80) : null,
+        bio: body.bio ? String(body.bio).slice(0, 200) : null,
         updated_at: new Date().toISOString(),
       };
       const { error: upErr } = await bot.from('links_pages').upsert(row);

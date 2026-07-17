@@ -25,6 +25,10 @@ interface PageStyle {
   accent: string | null;
   buttonStyle: 'glass' | 'solid' | 'outline';
   shape: 'rounded' | 'pill' | 'sharp';
+  bgColor: string | null;
+  bgImage: string | null;
+  title: string | null;
+  bio: string | null;
 }
 
 /**
@@ -57,20 +61,36 @@ export default function PublicLinksPage() {
   const accent = style?.accent || owner?.color || '#3faaff';
   const shapeCls = style?.shape === 'pill' ? 'rounded-full' : style?.shape === 'sharp' ? 'rounded-lg' : 'rounded-2xl';
   const btn = style?.buttonStyle ?? 'glass';
+  const pageTitle = style?.title || owner?.name || 'Links';
+  const pageBio = style?.bio || owner?.tagline || 'Find me everywhere';
 
   // Solid buttons need readable text on light accents (e.g. yellow).
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(accent.slice(i, i + 2), 16));
   const solidText = 0.299 * r + 0.587 * g + 0.114 * b > 160 ? '#0a0a0f' : '#ffffff';
 
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="h-32 md:h-40 w-full overflow-hidden bg-surface-bright">
-        {owner?.banner
-          ? <img src={owner.banner} alt="" className="w-full h-full object-cover" />
-          : <div className="w-full h-full" style={{ background: `linear-gradient(120deg, ${accent}22, transparent 60%), var(--color-surface-bright)` }} />}
-      </div>
+  // Custom wallpaper (image beats color) replaces the banner strip entirely.
+  const hasWallpaper = !!(style?.bgImage || style?.bgColor);
 
-      <main className="max-w-5xl mx-auto px-6 -mt-10 pb-24">
+  return (
+    <div
+      className="min-h-screen bg-background text-foreground"
+      style={
+        style?.bgImage ? { backgroundImage: `url(${style.bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }
+        : style?.bgColor ? { background: style.bgColor }
+        : undefined
+      }
+    >
+      {/* Readability scrim over image wallpapers */}
+      <div className={cn('min-h-screen', style?.bgImage && 'bg-black/60')}>
+      {!hasWallpaper && (
+        <div className="h-32 md:h-40 w-full overflow-hidden bg-surface-bright">
+          {owner?.banner
+            ? <img src={owner.banner} alt="" className="w-full h-full object-cover" />
+            : <div className="w-full h-full" style={{ background: `linear-gradient(120deg, ${accent}22, transparent 60%), var(--color-surface-bright)` }} />}
+        </div>
+      )}
+
+      <main className={cn('max-w-5xl mx-auto px-6 pb-24', hasWallpaper ? 'pt-12' : '-mt-10')}>
         <div className="grid md:grid-cols-[260px_1fr] gap-6 items-start">
           {/* ── Identity card ── */}
           <div className="glass-card rounded-2xl p-5 md:sticky md:top-6">
@@ -80,10 +100,10 @@ export default function PublicLinksPage() {
                 : <div className="w-full h-full flex items-center justify-center text-2xl" style={{ background: `${accent}1a` }}>🏰</div>}
             </div>
             <h1 className="text-xl font-black tracking-tight text-white font-display truncate">
-              {loading ? ' ' : (owner?.name ?? 'Links')}
+              {loading ? ' ' : pageTitle}
             </h1>
             {owner?.handle && <p className="text-xs text-zinc-500 font-medium truncate mt-0.5">twitch.tv/{owner.handle}</p>}
-            <p className="text-xs text-brand-muted font-medium mt-2 leading-relaxed">{owner?.tagline || 'Find me everywhere'}</p>
+            <p className="text-xs text-brand-muted font-medium mt-2 leading-relaxed">{pageBio}</p>
 
             <PublicNav streamerId={String(streamerId)} handle={owner?.handle} active="links" accent={accent} />
           </div>
@@ -127,6 +147,7 @@ export default function PublicLinksPage() {
           </div>
         </div>
       </main>
+      </div>
     </div>
   );
 }

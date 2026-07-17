@@ -11,6 +11,10 @@ interface PageStyle {
     accent: string | null;
     buttonStyle: 'glass' | 'solid' | 'outline';
     shape: 'rounded' | 'pill' | 'sharp';
+    bgColor: string | null;
+    bgImage: string | null;
+    title: string | null;
+    bio: string | null;
 }
 
 export default function LinksPage() {
@@ -19,13 +23,16 @@ export default function LinksPage() {
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<LinkRow | undefined>(undefined);
-    const [style, setStyle] = useState<PageStyle>({ accent: null, buttonStyle: 'glass', shape: 'rounded' });
+    const [style, setStyle] = useState<PageStyle>({ accent: null, buttonStyle: 'glass', shape: 'rounded', bgColor: null, bgImage: null, title: null, bio: null });
     const styleSaveRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    const [previewKey, setPreviewKey] = useState(0);
+    const bumpPreview = () => setPreviewKey((k) => k + 1);
     const LINKS = apiUrl('/api/links');
 
     const load = async () => {
         const r = await fetch(LINKS, { credentials: 'include' }).then((x) => x.json()).catch(() => ({}));
         setLinks(Array.isArray(r.links) ? r.links : []);
+        bumpPreview();
     };
 
     useEffect(() => {
@@ -46,7 +53,8 @@ export default function LinksPage() {
         setStyle(next);
         clearTimeout(styleSaveRef.current);
         styleSaveRef.current = setTimeout(() => {
-            fetch(`${LINKS}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next), credentials: 'include' });
+            fetch(`${LINKS}/settings`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(next), credentials: 'include' })
+                .then(bumpPreview);
         }, 400);
     };
 
@@ -69,9 +77,11 @@ export default function LinksPage() {
         if (!confirm('Delete this link?')) return;
         await fetch(`${LINKS}/${id}`, { method: 'DELETE', credentials: 'include' });
         setLinks((xs) => xs.filter((l) => l.id !== id));
+        bumpPreview();
     };
     const persistOrder = (list: LinkRow[]) =>
-        fetch(`${LINKS}/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: list.map((l) => l.id) }), credentials: 'include' });
+        fetch(`${LINKS}/reorder`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: list.map((l) => l.id) }), credentials: 'include' })
+            .then(bumpPreview);
     const move = (index: number, dir: -1 | 1) => {
         const next = [...links];
         const swap = index + dir;
@@ -97,7 +107,8 @@ export default function LinksPage() {
     const shareUrl = streamerId && typeof window !== 'undefined' ? `${window.location.origin}/links/${streamerId}` : '';
 
     return (
-        <div className="space-y-8 max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto lg:grid lg:grid-cols-[1fr_360px] lg:gap-10 lg:items-start">
+        <div className="space-y-8">
             <div className="flex items-start justify-between gap-6 flex-wrap">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight text-white font-heading">Links</h1>
@@ -118,7 +129,8 @@ export default function LinksPage() {
             )}
 
             {/* ── Page style ── */}
-            <div className="glass-card rounded-2xl p-5 border border-white/5 flex items-center gap-6 flex-wrap">
+            <div className="glass-card rounded-2xl p-5 border border-white/5 space-y-4">
+                <div className="flex items-center gap-6 flex-wrap">
                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest shrink-0">Page style</p>
 
                 <div className="flex items-center gap-2">
@@ -150,6 +162,37 @@ export default function LinksPage() {
                         {(['rounded', 'pill', 'sharp'] as const).map((s) => (
                             <button key={s} onClick={() => saveStyle({ ...style, shape: s })} className={cn('px-3 py-1 rounded-md text-[10px] font-black transition-colors cursor-pointer', style.shape === s ? 'bg-brand-primary text-white' : 'text-zinc-500 hover:text-white')}>{s}</button>
                         ))}
+                    </div>
+                </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4 border-t border-white/5">
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-zinc-400 block">Page title</label>
+                        <input type="text" value={style.title ?? ''} maxLength={80} onChange={(e) => saveStyle({ ...style, title: e.target.value || null })} className="void-input" placeholder="Defaults to your display name" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-zinc-400 block">Bio</label>
+                        <input type="text" value={style.bio ?? ''} maxLength={200} onChange={(e) => saveStyle({ ...style, bio: e.target.value || null })} className="void-input" placeholder="Defaults to your tagline" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-zinc-400 block">Wallpaper image URL</label>
+                        <input type="text" value={style.bgImage ?? ''} onChange={(e) => saveStyle({ ...style, bgImage: e.target.value.trim() || null })} className="void-input" placeholder="https://… (replaces the banner)" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-zinc-400 block">Wallpaper color</label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="color"
+                                value={style.bgColor ?? '#0a0a0f'}
+                                onChange={(e) => saveStyle({ ...style, bgColor: e.target.value })}
+                                className="w-9 h-9 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                                aria-label="Wallpaper color"
+                            />
+                            {style.bgColor && (
+                                <button onClick={() => saveStyle({ ...style, bgColor: null })} className="text-[10px] font-black uppercase text-zinc-500 hover:text-white transition-colors cursor-pointer">Clear</button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -201,6 +244,17 @@ export default function LinksPage() {
             </div>
 
             <LinkModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={save} initialData={editing} />
+        </div>
+
+        {/* ── Live preview (Linktree-style phone frame) ── */}
+        {streamerId && (
+            <div className="hidden lg:block sticky top-24">
+                <div className="mx-auto w-[330px] h-[640px] rounded-[2.75rem] border-[6px] border-white/10 bg-black overflow-hidden shadow-2xl shadow-black/60">
+                    <iframe key={previewKey} src={`/links/${streamerId}`} className="w-full h-full border-0" title="Live preview" />
+                </div>
+                <p className="text-center text-[10px] font-black uppercase tracking-widest text-zinc-600 mt-3">Live preview</p>
+            </div>
+        )}
         </div>
     );
 }
