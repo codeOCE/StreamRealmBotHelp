@@ -16,6 +16,7 @@ import { handleEventSub } from './routes/eventsub';
 import { handleBot } from './routes/bot';
 import { handleFonts } from './routes/fonts';
 import { handleShop } from './routes/shop';
+import { handleLinks } from './routes/links';
 import { handleGiveaways } from './routes/giveaways';
 import { handlePolls } from './routes/polls';
 import { handleCounters } from './routes/counters';
@@ -130,6 +131,9 @@ export default {
       }
       if (path === '/api/shop' || path.startsWith('/api/shop/')) {
         return handleShop(request, env, createSupabaseClient(env), path, method);
+      }
+      if (path === '/api/links' || path.startsWith('/api/links/')) {
+        return handleLinks(request, env, createSupabaseClient(env), path, method);
       }
       if (path === '/api/giveaways' || path.startsWith('/api/giveaways/')) {
         return handleGiveaways(request, env, createSupabaseClient(env), path, method);

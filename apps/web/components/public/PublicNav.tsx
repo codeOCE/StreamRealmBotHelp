@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Trophy, Gift, Terminal, Heart } from 'lucide-react';
+import { Trophy, Gift, Terminal, Heart, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type PublicNavTab = 'leaderboard' | 'shop' | 'commands';
+export type PublicNavTab = 'leaderboard' | 'shop' | 'commands' | 'links';
 
 /**
  * Shared nav for the viewer-facing pages that hang off a streamer's public
@@ -27,6 +27,7 @@ export function PublicNav({
     { key: 'leaderboard', label: 'Leaderboard', href: `/leaderboard/${streamerId}`, icon: Trophy },
     { key: 'shop', label: 'Loyalty Store', href: `/shop/${streamerId}`, icon: Gift },
     { key: 'commands', label: 'Commands', href: `/commands/${streamerId}`, icon: Terminal },
+    { key: 'links', label: 'Links', href: `/links/${streamerId}`, icon: Link2 },
   ];
 
   return (
