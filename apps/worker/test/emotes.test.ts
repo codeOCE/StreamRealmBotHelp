@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { variantPath } from '../src/routes/emote-cdn';
 import { buildEmoteMap, emoteUrlsInText, isValidEmoteCode, type EmoteRow } from '../src/chat/emotes';
 
 const row = (code: string, url: string): EmoteRow => ({ id: code, code, image_url: url, width: 28, animated: false });
@@ -36,5 +37,20 @@ describe('emoteUrlsInText', () => {
   it('caps the flood', () => {
     const spam = Array(50).fill('catJAM').join(' ');
     expect(emoteUrlsInText(spam, map, 25)).toHaveLength(25);
+  });
+});
+
+describe('emote CDN variant paths', () => {
+  it('puts variants in a folder beside the original, never clobbering it', () => {
+    const orig = 'emotes/abc/def.png';
+    expect(variantPath(orig, '2x')).toBe('emotes/abc/def/2x.webp');
+    expect(variantPath(orig, '2x').startsWith('emotes/abc/def')).toBe(true);
+    expect(variantPath(orig, '2x')).not.toBe(orig);
+  });
+
+  it('handles any original extension, including none', () => {
+    expect(variantPath('emotes/a/b.gif', '4x')).toBe('emotes/a/b/4x.webp');
+    expect(variantPath('emotes/a/b.webp', '1x')).toBe('emotes/a/b/1x.webp');
+    expect(variantPath('emotes/a/b', '3x')).toBe('emotes/a/b/3x.webp');
   });
 });

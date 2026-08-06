@@ -1,4 +1,5 @@
 import { fetchDirectory } from "@/lib/vault";
+import { DEFAULT_VAULT_SORT, VAULT_SORTS } from "@/lib/vault-shared";
 import { VaultBrowseClient, type VaultSearchParams } from "@/components/vault-browse-client";
 
 export type { VaultSearchParams };
@@ -16,7 +17,10 @@ export async function VaultBrowse({ sp }: { sp: VaultSearchParams }) {
   if (sp.animated) params.set("animated", sp.animated);
   if (sp.overlaying) params.set("overlaying", sp.overlaying);
   if (sp.exact) params.set("exact", sp.exact);
-  if (sp.sort) params.set("sort", sp.sort);
+  // Default must match the client's initial sort or the seeded grid would
+  // re-order on hydration.
+  const sort = (VAULT_SORTS as readonly string[]).includes(sp.sort ?? "") ? sp.sort! : DEFAULT_VAULT_SORT;
+  params.set("sort", sort);
   params.set("page", "1");
 
   const { emotes, total } = await fetchDirectory(params);

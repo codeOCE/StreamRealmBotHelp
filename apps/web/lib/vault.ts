@@ -1,10 +1,10 @@
 import { headers } from "next/headers";
 import { getWorkerOrigin } from "@/lib/api";
-import type { VaultEmote } from "@/lib/vault-shared";
+import type { VaultEmote, VaultEmoteDetail, VaultProfile } from "@/lib/vault-shared";
 
 // Re-export the client-safe bits so existing `@/lib/vault` imports keep working.
 export { checker } from "@/lib/vault-shared";
-export type { VaultEmote } from "@/lib/vault-shared";
+export type { VaultEmote, VaultEmoteDetail, VaultProfile } from "@/lib/vault-shared";
 
 /**
  * emotes.creatorcastle.gg and app.creatorcastle.gg are the SAME Next.js deploy
@@ -27,11 +27,28 @@ export async function fetchDirectory(
   return res.json();
 }
 
-export async function fetchEmote(id: string): Promise<VaultEmote | null> {
+/** Emote detail + the related-emotes row (7TV shows similar emotes by tag). */
+export async function fetchEmote(
+  id: string,
+): Promise<{ emote: VaultEmoteDetail; related: VaultEmote[] } | null> {
   const res = await fetch(`${getWorkerOrigin()}/api/emotes/public/emote/${encodeURIComponent(id)}`, {
     next: { revalidate: 60 },
   });
   if (!res.ok) return null;
   const j = await res.json().catch(() => null);
-  return (j?.emote as VaultEmote) ?? null;
+  if (!j?.emote) return null;
+  return { emote: j.emote as VaultEmoteDetail, related: (j.related ?? []) as VaultEmote[] };
+}
+
+/** A creator's public vault profile — their shared emotes. */
+export async function fetchUserProfile(
+  name: string,
+): Promise<{ user: VaultProfile; emotes: VaultEmote[] } | null> {
+  const res = await fetch(`${getWorkerOrigin()}/api/emotes/public/user/${encodeURIComponent(name)}`, {
+    next: { revalidate: 60 },
+  });
+  if (!res.ok) return null;
+  const j = await res.json().catch(() => null);
+  if (!j?.user) return null;
+  return { user: j.user as VaultProfile, emotes: (j.emotes ?? []) as VaultEmote[] };
 }

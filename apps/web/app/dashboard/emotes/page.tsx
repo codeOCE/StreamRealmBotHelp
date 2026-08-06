@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { apiUrl } from '@/lib/api';
+import { buildVariants } from '@/lib/emote-variants';
 
 /**
  * Custom chat emotes — the 7TV/BTTV-style emote platform, dressed in the Castle
@@ -584,6 +585,10 @@ function CreateModal({ seedFile, onClose, onSaved }: { seedFile: File | null; on
       const fd = new FormData();
       fd.append('file', file); fd.append('code', code);
       fd.append('tags', tags); fd.append('zeroWidth', String(overlaying)); fd.append('share', String(!priv));
+      // 7TV-style 1x–4x webp, resized here in the browser. Animated emotes come
+      // back null and ship without variants — the CDN serves their original.
+      const variants = await buildVariants(file);
+      if (variants) for (const [size, blob] of Object.entries(variants)) fd.append(size, blob, `${size}.webp`);
       res = await fetch(EMOTES, { method: 'POST', body: fd, credentials: 'include' });
     } else {
       if (!url.trim()) { setErr('Enter an image URL.'); setBusy(false); return; }

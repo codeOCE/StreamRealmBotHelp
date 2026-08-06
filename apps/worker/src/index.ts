@@ -25,6 +25,7 @@ import { handleTips } from './routes/tips';
 import { handleTipPublic } from './routes/tip-public';
 import { handleCosmetics } from './routes/cosmetics';
 import { handleEmotes } from './routes/emotes';
+import { handleEmoteCdn } from './routes/emote-cdn';
 import { handleIntegrationModules } from './integrations/router';
 import { RealtimeHub } from './realtime';
 import { CreatorTokenDO } from './token-do';
@@ -46,6 +47,13 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
+
+    // Emote CDN — /emote/:id/:size.webp. Matched by path, not host, so it answers
+    // on whatever domain reaches the worker; no auth, no CORS negotiation, just
+    // bytes. Today that's the api host (see EMOTE_CDN_URL in env.ts).
+    if (path.startsWith('/emote/')) {
+      return handleEmoteCdn(request, env, url, ctx);
+    }
 
     // CORS preflight
     if (method === 'OPTIONS') {

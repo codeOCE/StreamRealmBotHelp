@@ -13,6 +13,9 @@
   // worker at tcg.creatorcastle.gg). Wrangler provisions the DNS record + cert.
   "routes": [
     { "pattern": "api.creatorcastle.gg", "custom_domain": true, "zone_name": "creatorcastle.gg" }
+    // NOTE: the emote CDN (handleEmoteCdn, path /emote/:id/:size) currently rides
+    // on the api host. cdn.creatorcastle.gg is NOT free — it already resolves to
+    // an R2 public bucket — so a dedicated host needs a name that isn't taken.
   ],
   // Non-secret config only. These are the PRODUCTION values used by `wrangler deploy`.
   // Local `wrangler dev` overrides ENVIRONMENT/FRONTEND_URL/PUBLIC_WORKER_URL/COOKIE_DOMAIN

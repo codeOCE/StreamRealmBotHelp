@@ -12,7 +12,7 @@ export function VaultChrome({
   active = "emotes",
 }: {
   children: React.ReactNode;
-  active?: "emotes" | "studio";
+  active?: "emotes" | "studio" | "admin";
 }) {
   return (
     <>
@@ -70,6 +70,25 @@ export function VaultChrome({
               Studio
             </Link>
           </div>
+
+          {/* Global search — 7TV's signature nav element. Plain GET form: it
+              navigates to /?q=, and the browse page seeds its live search from
+              that, so it works with or without JS. */}
+          <form action="/" method="get" className="hidden md:block flex-1 max-w-md">
+            <div className="relative">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                type="text"
+                name="q"
+                placeholder="Search emotes…"
+                aria-label="Search emotes"
+                className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-sm text-white outline-none focus:border-brand-primary/50 focus:bg-white/[0.07] transition-colors"
+              />
+            </div>
+          </form>
 
           {/* Right: install-the-extension CTA + auth-aware corner */}
           <div className="flex items-center gap-3 flex-shrink-0">

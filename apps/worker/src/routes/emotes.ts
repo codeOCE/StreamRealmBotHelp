@@ -5,6 +5,7 @@ import { getUserFromSession } from '../lib/session';
 import { error, json, publicJson } from '../lib/response';
 import { getAppAccessToken, getUserByLogin } from '../lib/twitch';
 import { uploadPublic, removeObject, safeExt } from '../lib/storage';
+import { SIZES, variantPath } from './emote-cdn';
 import { buildEmoteMap, isValidEmoteCode, type EmoteRow, type PublicEmote } from '../chat/emotes';
 
 /**
@@ -30,13 +31,23 @@ import { buildEmoteMap, isValidEmoteCode, type EmoteRow, type PublicEmote } from
  * Public (NO auth — CORS open, cacheable):
  *   GET    /api/emotes/public/channel/:channel[?type=login|id]
  *          → { channel, emotes: { CODE: { url, w, animated } } }   (read by the extension)
- *   GET    /api/emotes/public/directory?q=&tag=&animated=&sort=&page=
- *          → { emotes: [...], total }   (the emotes.creatorcastle.gg vault browse page)
+ *   GET    /api/emotes/public/directory?q=&tag=&animated=&overlaying=&exact=&sort=&page=
+ *          sort: new | name | top (most channels) | trending (most adds, 14d)
+ *          → { emotes: [...], total, page }   (the emotes.creatorcastle.gg vault browse)
  *   GET    /api/emotes/public/emote/:id
- *          → { emote: {...} }   (an individual emote's SEO detail page)
+ *          → { emote: {...}, related: [...] }   (an individual emote's SEO detail page)
+ *   GET    /api/emotes/public/user/:name
+ *          → { user: {...}, emotes: [...] }   (a creator's public vault profile)
  */
 
 const MAX_OWN_EMOTES = 300;
+/**
+ * Branded emote CDN origin — the 7TV cdn.7tv.app equivalent. Overridable via
+ * EMOTE_CDN_URL so the host can move to a dedicated subdomain later without
+ * touching any code; rows written before the move keep resolving either way,
+ * since the worker answers /emote/:id/:size on whatever host reaches it.
+ */
+const emoteCdn = (env: Env) => String(env.EMOTE_CDN_URL ?? env.PUBLIC_WORKER_URL ?? 'https://api.creatorcastle.gg');
 const ALLOWED_IMG = ['png', 'gif', 'webp', 'apng', 'jpg', 'jpeg', 'avif'];
 
 function isPlatformAdmin(env: Env, twitchId: string): boolean {
@@ -45,6 +56,14 @@ function isPlatformAdmin(env: Env, twitchId: string): boolean {
     .map((s) => s.trim())
     .filter(Boolean);
   return ids.includes(twitchId);
+}
+
+/** Drop an emote's original file and every size variant beside it. */
+async function removeEmoteObjects(supabase: SupabaseClient, storagePath: string): Promise<void> {
+  await Promise.all([
+    removeObject(supabase, storagePath),
+    ...SIZES.map((s) => removeObject(supabase, variantPath(storagePath, s))),
+  ]);
 }
 
 const cleanLogin = (s: unknown): string => String(s ?? '').trim().replace(/^@/, '').toLowerCase();
@@ -102,6 +121,10 @@ export async function handleEmotes(
     if (method !== 'GET') return publicJson({ error: 'Method not allowed' }, { status: 405 });
     return publicEmoteDetail(bot, supabase, seg[2]);
   }
+  if (seg[0] === 'public' && seg[1] === 'user' && seg[2]) {
+    if (method !== 'GET') return publicJson({ error: 'Method not allowed' }, { status: 405 });
+    return publicUserProfile(bot, supabase, decodeURIComponent(seg[2]));
+  }
 
   // Everything below is streamer-scoped.
   const user = await getUserFromSession(request, env, supabase);
@@ -120,6 +143,13 @@ export async function handleEmotes(
       .order('created_at', { ascending: true })
       .limit(200);
     return json({ emotes: data ?? [] }, request, env);
+  }
+
+  // ── Which emotes this channel already has (vault marks them "in channel") ─
+  if (seg[0] === 'mine' && seg[1] === 'ids') {
+    if (method !== 'GET') return error('Method not allowed', 405, request, env);
+    const { data } = await bot.from('channel_emotes').select('emote_id').eq('streamer_id', streamerId);
+    return json({ ids: (data ?? []).map((r: any) => r.emote_id) }, request, env);
   }
 
   // ── Directory: browse approved public emotes from other channels ─────────
@@ -200,6 +230,9 @@ export async function handleEmotes(
     let tags: string[] = [];
     let zeroWidth = false;
     let share = false; // "Private" unchecked → submit to the vault
+    let hasVariants = false;
+    // Minted here, not by the DB, so the CDN URL can be built before insert.
+    const emoteId = crypto.randomUUID();
 
     if (ct.includes('multipart/form-data')) {
       const form = await request.formData().catch(() => null);
@@ -215,8 +248,25 @@ export async function handleEmotes(
       if (file.size > 1024 * 1024) return error('emote must be under 1MB', 400, request, env);
       animated = ext === 'gif' || ext === 'apng' || ext === 'webp';
       storagePath = `emotes/${streamerId}/${crypto.randomUUID()}.${ext}`;
-      imageUrl = await uploadPublic(supabase, storagePath, file, file.type || 'image/png');
-      if (!imageUrl) return error('Upload failed', 500, request, env);
+      const stored = await uploadPublic(supabase, storagePath, file, file.type || 'image/png');
+      if (!stored) return error('Upload failed', 500, request, env);
+
+      // 7TV-style size variants. The browser resizes static images to webp and
+      // posts them alongside the original (see the upload form); animated
+      // emotes can't go through a canvas without losing their frames, so they
+      // ship without variants and the CDN serves the original at every size.
+      const variants = await Promise.all(
+        SIZES.map(async (size) => {
+          const v = form?.get(size) as unknown;
+          if (!(v instanceof File) || v.size === 0 || v.size > 1024 * 1024) return false;
+          return !!(await uploadPublic(supabase, variantPath(storagePath!, size), v, 'image/webp'));
+        }),
+      );
+      hasVariants = variants.every(Boolean);
+
+      // The row stores the branded CDN path, never the storage URL — that's
+      // what keeps the storage backend swappable later. 2x is canonical.
+      imageUrl = `${emoteCdn(env)}/emote/${emoteId}/2x.webp`;
     } else {
       const body = (await request.json().catch(() => ({}))) as Record<string, any>;
       code = String(body.code ?? '').trim();
@@ -230,15 +280,16 @@ export async function handleEmotes(
     }
 
     if (!isValidEmoteCode(code)) {
-      if (storagePath) await removeObject(supabase, storagePath);
+      if (storagePath) await removeEmoteObjects(supabase, storagePath);
       return error('Code must be 2–30 letters, digits or underscores (starting with a letter/digit)', 400, request, env);
     }
 
     const { data, error: insErr } = await bot
       .from('emotes')
       .insert({
+        id: emoteId,
         owner_id: streamerId, code, image_url: imageUrl, storage_path: storagePath, width, animated,
-        tags, zero_width: zeroWidth,
+        tags, zero_width: zeroWidth, has_variants: hasVariants,
         // Shared emotes go into the vault as 'pending' for review; private stay 'channel'.
         visibility: share ? 'public' : 'channel',
         status: share ? 'pending' : 'approved',
@@ -246,7 +297,7 @@ export async function handleEmotes(
       .select('*')
       .single();
     if (insErr) {
-      if (storagePath) await removeObject(supabase, storagePath);
+      if (storagePath) await removeEmoteObjects(supabase, storagePath);
       return error(/duplicate key|unique/i.test(insErr.message) ? `You already have an emote called "${code}"` : 'Could not add emote', 400, request, env);
     }
     return json({ emote: emoteToApi(data) }, request, env, { status: 201 });
@@ -321,7 +372,7 @@ export async function handleEmotes(
   if (id && method === 'DELETE') {
     const { data } = await bot.from('emotes').select('storage_path').eq('owner_id', streamerId).eq('id', id).maybeSingle();
     if (!data) return error('Emote not found', 404, request, env);
-    if (data.storage_path) await removeObject(supabase, data.storage_path);
+    if (data.storage_path) await removeEmoteObjects(supabase, data.storage_path);
     await bot.from('emotes').delete().eq('owner_id', streamerId).eq('id', id);
     return json({ ok: true }, request, env);
   }
@@ -382,47 +433,80 @@ async function publicChannelEmotes(env: Env, supabase: SupabaseClient, channel: 
 const DIRECTORY_PAGE_SIZE = 48;
 
 /** DB row → public directory shape (no owner-specific "added" state — this is anonymous). */
-function emoteToPublicApi(e: any, owner: string | null) {
+function emoteToPublicApi(e: any, owner: { name: string; avatar: string | null } | null, channels = 0) {
   return {
     id: e.id, code: e.code, imageUrl: e.image_url, width: e.width, animated: e.animated,
-    zeroWidth: !!e.zero_width, tags: Array.isArray(e.tags) ? e.tags : [], owner, createdAt: e.created_at,
+    zeroWidth: !!e.zero_width, tags: Array.isArray(e.tags) ? e.tags : [],
+    owner: owner?.name ?? null, ownerAvatar: owner?.avatar ?? null,
+    channels, createdAt: e.created_at,
   };
 }
 
-/** Public, unauthenticated vault browse — powers emotes.creatorcastle.gg. */
+/** Look up owner {name, avatar} + handle for a set of streamer ids. */
+async function fetchOwners(supabase: SupabaseClient, ownerIds: string[]) {
+  const { data } = ownerIds.length
+    ? await supabase.from('streamers').select('id, username, display_name, avatar_url').in('id', ownerIds)
+    : { data: [] as any[] };
+  return new Map(
+    (data ?? []).map((o: any) => [o.id, { name: o.display_name || o.username, avatar: o.avatar_url ?? null, handle: o.username }]),
+  );
+}
+
+/**
+ * Public, unauthenticated vault browse — powers emotes.creatorcastle.gg.
+ * Popularity-aware (Top/Trending + "used in N channels") via the SQL function
+ * from migration 039, with a plain-query fallback so a deploy that lands before
+ * the migration still serves New/A–Z (counts just read 0).
+ */
 async function publicDirectory(bot: ReturnType<typeof botSchema>, supabase: SupabaseClient, url: URL): Promise<Response> {
   const q = (url.searchParams.get('q') ?? '').trim().slice(0, 40);
   const tag = (url.searchParams.get('tag') ?? '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 20);
   const exact = url.searchParams.get('exact') === 'true';
   const animated = url.searchParams.get('animated'); // 'true' | 'false' | null (any)
   const overlaying = url.searchParams.get('overlaying') === 'true';
-  const sort = url.searchParams.get('sort') === 'name' ? 'name' : 'new';
+  const sortRaw = url.searchParams.get('sort') ?? 'new';
+  const sort = ['name', 'top', 'trending'].includes(sortRaw) ? sortRaw : 'new';
   const page = Math.max(1, Math.floor(Number(url.searchParams.get('page')) || 1));
   const from = (page - 1) * DIRECTORY_PAGE_SIZE;
 
-  let query = bot
-    .from('emotes')
-    .select('id, code, image_url, width, animated, zero_width, tags, owner_id, created_at', { count: 'exact' })
-    .eq('visibility', 'public')
-    .eq('status', 'approved')
-    .range(from, from + DIRECTORY_PAGE_SIZE - 1);
-  if (q) query = exact ? query.eq('code', q) : query.ilike('code', `%${q}%`);
-  if (tag) query = query.contains('tags', [tag]);
-  if (animated === 'true') query = query.eq('animated', true);
-  else if (animated === 'false') query = query.eq('animated', false);
-  if (overlaying) query = query.eq('zero_width', true);
-  query = sort === 'name' ? query.order('code', { ascending: true }) : query.order('created_at', { ascending: false });
+  const { data: rpcRows, error: rpcErr } = await bot.rpc('public_emote_directory', {
+    p_q: q,
+    p_tag: tag,
+    p_exact: exact,
+    p_animated: animated === 'true' ? 'true' : animated === 'false' ? 'false' : null,
+    p_overlaying: overlaying,
+    p_sort: sort,
+    p_limit: DIRECTORY_PAGE_SIZE,
+    p_offset: from,
+  });
 
-  const { data, count } = await query;
-  const rows = data ?? [];
-  const ownerIds = [...new Set(rows.map((e: any) => e.owner_id).filter(Boolean))];
-  const { data: owners } = ownerIds.length
-    ? await supabase.from('streamers').select('id, username').in('id', ownerIds)
-    : { data: [] as any[] };
-  const ownerName = new Map((owners ?? []).map((o: any) => [o.id, o.username]));
+  let rows: any[];
+  let total: number;
+  if (!rpcErr && Array.isArray(rpcRows)) {
+    rows = rpcRows;
+    total = rows.length ? Number(rows[0].total_count) : 0;
+  } else {
+    // Fallback: no counts; Top/Trending degrade to New.
+    let query = bot
+      .from('emotes')
+      .select('id, code, image_url, width, animated, zero_width, tags, owner_id, created_at', { count: 'exact' })
+      .eq('visibility', 'public')
+      .eq('status', 'approved')
+      .range(from, from + DIRECTORY_PAGE_SIZE - 1);
+    if (q) query = exact ? query.eq('code', q) : query.ilike('code', `%${q}%`);
+    if (tag) query = query.contains('tags', [tag]);
+    if (animated === 'true') query = query.eq('animated', true);
+    else if (animated === 'false') query = query.eq('animated', false);
+    if (overlaying) query = query.eq('zero_width', true);
+    query = sort === 'name' ? query.order('code', { ascending: true }) : query.order('created_at', { ascending: false });
+    const res = await query;
+    rows = res.data ?? [];
+    total = res.count ?? rows.length;
+  }
 
-  const emotes = rows.map((e: any) => emoteToPublicApi(e, ownerName.get(e.owner_id) ?? null));
-  return publicJson({ emotes, total: count ?? emotes.length, page });
+  const owners = await fetchOwners(supabase, [...new Set(rows.map((e: any) => e.owner_id).filter(Boolean))]);
+  const emotes = rows.map((e: any) => emoteToPublicApi(e, owners.get(e.owner_id) ?? null, Number(e.channel_count ?? 0)));
+  return publicJson({ emotes, total, page });
 }
 
 /** Public, unauthenticated single-emote page — the thing that's actually SEO-indexable. */
@@ -435,8 +519,56 @@ async function publicEmoteDetail(bot: ReturnType<typeof botSchema>, supabase: Su
     .eq('status', 'approved')
     .maybeSingle();
   if (!e) return publicJson({ error: 'Not found' }, { status: 404 });
-  const { data: owner } = e.owner_id
-    ? await supabase.from('streamers').select('username').eq('id', e.owner_id).maybeSingle()
-    : { data: null as any };
-  return publicJson({ emote: emoteToPublicApi(e, owner?.username ?? null) });
+
+  const tags: string[] = Array.isArray(e.tags) ? e.tags : [];
+  const [{ count: channels }, ownerRes, relatedRes] = await Promise.all([
+    bot.from('channel_emotes').select('streamer_id', { count: 'exact', head: true }).eq('emote_id', e.id),
+    e.owner_id
+      ? supabase.from('streamers').select('username, display_name, avatar_url').eq('id', e.owner_id).maybeSingle()
+      : Promise.resolve({ data: null as any }),
+    tags.length
+      ? bot
+          .from('emotes')
+          .select('id, code, image_url, width, animated, zero_width, tags, owner_id, created_at')
+          .eq('visibility', 'public')
+          .eq('status', 'approved')
+          .neq('id', e.id)
+          .overlaps('tags', tags)
+          .limit(12)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+
+  const o = ownerRes.data;
+  const owner = o ? { name: o.display_name || o.username, avatar: o.avatar_url ?? null, handle: o.username } : null;
+  const related = (relatedRes.data ?? []).slice(0, 6).map((r: any) => emoteToPublicApi(r, null, 0));
+  const emote = { ...emoteToPublicApi(e, owner, channels ?? 0), ownerHandle: owner?.handle ?? null };
+  return publicJson({ emote, related });
+}
+
+/** Public creator profile — a streamer's shared vault emotes, by username/slug. */
+async function publicUserProfile(bot: ReturnType<typeof botSchema>, supabase: SupabaseClient, name: string): Promise<Response> {
+  const handle = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+  if (!handle) return publicJson({ error: 'Not found' }, { status: 404 });
+  const { data: s } = await supabase
+    .from('streamers')
+    .select('id, username, display_name, avatar_url')
+    .ilike('username', handle)
+    .maybeSingle();
+  if (!s) return publicJson({ error: 'Not found' }, { status: 404 });
+
+  const { data: rows } = await bot
+    .from('emotes')
+    .select('id, code, image_url, width, animated, zero_width, tags, owner_id, created_at')
+    .eq('owner_id', s.id)
+    .eq('visibility', 'public')
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  const owner = { name: s.display_name || s.username, avatar: s.avatar_url ?? null };
+  const emotes = (rows ?? []).map((e: any) => emoteToPublicApi(e, owner, 0));
+  return publicJson({
+    user: { name: owner.name, handle: s.username, avatar: owner.avatar, count: emotes.length },
+    emotes,
+  });
 }

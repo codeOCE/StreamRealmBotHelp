@@ -34,6 +34,13 @@ export interface Env {
    * (or behind a tunnel). Falls back to the request origin when unset.
    */
   PUBLIC_WORKER_URL?: string;
+
+  /**
+   * Origin that serves emote images (/emote/:id/:size.webp). Defaults to the
+   * worker's own host; set this once a dedicated CDN subdomain exists so new
+   * emotes are written with branded URLs.
+   */
+  EMOTE_CDN_URL?: string;
   /** Seed used to derive per-subscription HMAC secrets for webhook verification. */
   EVENTSUB_SECRET?: string;
 

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { checker, type VaultEmote } from "@/lib/vault-shared";
+import { checker, DEFAULT_VAULT_SORT, type VaultEmote, type VaultSort } from "@/lib/vault-shared";
+import { AddEmoteButton } from "@/components/add-emote-button";
 
 const PAGE_SIZE = 48;
 
@@ -16,15 +17,35 @@ export type VaultSearchParams = {
   page?: string;
 };
 
+const SORT_TABS: { key: VaultSort; label: string; icon: React.ReactNode }[] = [
+  {
+    key: "top",
+    label: "Top",
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></svg>,
+  },
+  {
+    key: "trending",
+    label: "Trending",
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></svg>,
+  },
+  {
+    key: "new",
+    label: "New",
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" /><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" /></svg>,
+  },
+  {
+    key: "name",
+    label: "A–Z",
+    icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 16 4 4 4-4" /><path d="M7 20V4" /><path d="M20 8h-5" /><path d="M15 4h5l-5 6h5" /></svg>,
+  },
+];
+
 /**
- * The public emote vault — the full instant 7TV-style browser, but server-seeded
- * for SEO. The parent server component fetches page 1 and hands it in as
- * `initialEmotes` / `initialTotal`, so the first grid is already in the HTML for
- * crawlers; this component then takes over for live search, filtering, sorting,
- * view-switching, and load-more, hitting the public (CORS-open, cacheable)
- * /api/emotes/public/directory endpoint directly. Mirrors the dashboard's own
- * Directory browser (app/dashboard/emotes/page.tsx), minus the add-to-channel
- * actions — here each emote links to its indexable detail page.
+ * The public emote vault — the full instant 7TV-style browser, server-seeded for
+ * SEO. The parent server component fetches page 1 and hands it in, so the first
+ * grid is already in the HTML for crawlers; this component then takes over for
+ * live search, filtering, Top/Trending sorting, view-switching, and load-more
+ * against the public (CORS-open, cacheable) directory endpoint.
  */
 export function VaultBrowseClient({
   initialEmotes,
@@ -41,7 +62,9 @@ export function VaultBrowseClient({
   const [staticOnly, setStaticOnly] = useState(initialSp.animated === "false");
   const [overlayOnly, setOverlayOnly] = useState(initialSp.overlaying === "true");
   const [exact, setExact] = useState(initialSp.exact === "true");
-  const [sort, setSort] = useState<"new" | "name">(initialSp.sort === "name" ? "name" : "new");
+  const [sort, setSort] = useState<VaultSort>(
+    (SORT_TABS.find((s) => s.key === initialSp.sort)?.key ?? DEFAULT_VAULT_SORT) as VaultSort,
+  );
   const [view, setView] = useState<"grid" | "list">("grid");
 
   const [emotes, setEmotes] = useState<VaultEmote[]>(initialEmotes);
@@ -50,6 +73,33 @@ export function VaultBrowseClient({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const first = useRef(true);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Emotes the signed-in viewer already has in their channel, so cards open
+  // pre-ticked instead of offering to add something they already own. Empty
+  // for logged-out visitors (401) — no gate needed, the set just stays empty.
+  const [mine, setMine] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    fetch("/api/emotes/mine/ids", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => r?.ids && setMine(new Set(r.ids)))
+      .catch(() => {});
+  }, []);
+
+  // "/" focuses search, the way 7TV and every dense browser does it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = document.activeElement;
+      const typing = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (e.key === "Escape" && el === searchRef.current) searchRef.current?.blur();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const buildParams = (p: number) => {
     const params = new URLSearchParams({ sort, page: String(p) });
@@ -72,6 +122,10 @@ export function VaultBrowseClient({
     const t = setTimeout(async () => {
       setLoading(true);
       setPage(1);
+      // Keep the URL in step so a filtered view is shareable and Back works.
+      const qs = buildParams(1);
+      qs.delete("page");
+      window.history.replaceState(null, "", qs.toString() ? `/?${qs}` : "/");
       const r = await fetch(`/api/emotes/public/directory?${buildParams(1)}`)
         .then((x) => x.json())
         .catch(() => ({}));
@@ -95,6 +149,14 @@ export function VaultBrowseClient({
   };
 
   const hasMore = emotes.length < total;
+
+  // Popular tags, counted off what's loaded. ponytail: good enough as a
+  // discovery affordance; a real global tag-count needs its own aggregate.
+  const popularTags = (() => {
+    const counts = new Map<string, number>();
+    for (const e of emotes) for (const t of e.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+  })();
 
   return (
     <div className="space-y-6">
@@ -121,11 +183,15 @@ export function VaultBrowseClient({
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
                 <input
+                  ref={searchRef}
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Emote"
-                  className="w-full bg-black/40 border border-white/10 rounded-lg pl-8 pr-3 py-2.5 text-sm text-white outline-none focus:border-brand-primary/50"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg pl-8 pr-8 py-2.5 text-sm text-white outline-none focus:border-brand-primary/50"
                 />
+                <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-black text-zinc-600 border border-white/10 rounded px-1 py-0.5 pointer-events-none">
+                  /
+                </kbd>
               </div>
             </FilterSection>
 
@@ -139,6 +205,22 @@ export function VaultBrowseClient({
                   className="w-full bg-black/40 border border-white/10 rounded-lg pl-8 pr-3 py-2.5 text-sm text-white outline-none focus:border-brand-primary/50"
                 />
               </div>
+              {popularTags.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {popularTags.map(([t, n]) => (
+                    <button
+                      key={t}
+                      onClick={() => setTag(tag === t ? "" : t)}
+                      title={`${n} on this page`}
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition-colors ${
+                        tag === t ? "bg-brand-primary text-black" : "bg-white/5 text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      #{t}
+                    </button>
+                  ))}
+                </div>
+              )}
             </FilterSection>
 
             <FilterSection title="Filters">
@@ -153,14 +235,15 @@ export function VaultBrowseClient({
         {/* ── Results ─────────────────────────────────────────────── */}
         <div className="space-y-5 min-w-0">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex gap-1 p-1 rounded-lg bg-white/[0.03] border border-white/5">
-              {(["new", "name"] as const).map((s) => (
+            <div className="flex gap-1 p-1 rounded-lg bg-white/[0.03] border border-white/5 flex-wrap">
+              {SORT_TABS.map((s) => (
                 <button
-                  key={s}
-                  onClick={() => setSort(s)}
-                  className={`px-3.5 py-1.5 rounded-md text-xs font-black transition-colors ${sort === s ? "bg-white/10 text-white" : "text-zinc-500 hover:text-white"}`}
+                  key={s.key}
+                  onClick={() => setSort(s.key)}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-black transition-colors ${sort === s.key ? "bg-white/10 text-white" : "text-zinc-500 hover:text-white"}`}
                 >
-                  {s === "new" ? "✨ New" : "🔤 A–Z"}
+                  <span className={sort === s.key ? "text-brand-primary" : ""}>{s.icon}</span>
+                  {s.label}
                 </button>
               ))}
             </div>
@@ -178,7 +261,7 @@ export function VaultBrowseClient({
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
               {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} className="glass-card rounded-2xl p-5 border border-white/5"><div className="skeleton h-16 w-full rounded-xl" /></div>
               ))}
@@ -189,28 +272,15 @@ export function VaultBrowseClient({
               <p className="text-zinc-600 text-sm font-semibold">No emotes match those filters.</p>
             </div>
           ) : view === "grid" ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3">
               {emotes.map((e) => (
-                <Link
-                  key={e.id}
-                  href={`/e/${e.id}`}
-                  className="group relative glass-card rounded-2xl border border-white/5 hover:border-brand-primary/40 transition-colors overflow-hidden"
-                >
-                  <div className="relative h-24 flex items-center justify-center overflow-hidden" style={checker}>
-                    <img src={e.imageUrl} alt={`${e.code} emote`} loading="lazy" style={{ height: Math.min(64, e.width) }} className="object-contain transition-transform duration-200 ease-out group-hover:scale-[1.65]" />
-                    {e.animated && <span className="absolute top-1.5 left-1.5 text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-black/60 text-amber-300 border border-amber-400/20">GIF</span>}
-                  </div>
-                  <div className="px-3 py-2 border-t border-white/5">
-                    <code className="text-xs font-black text-white truncate block">{e.code}</code>
-                    {e.owner && <p className="text-[10px] text-zinc-600 truncate mt-0.5">{e.owner}</p>}
-                  </div>
-                </Link>
+                <EmoteCard key={e.id} e={e} added={mine.has(e.id)} />
               ))}
             </div>
           ) : (
             <div className="space-y-1.5">
               {emotes.map((e) => (
-                <Link key={e.id} href={`/e/${e.id}`} className="flex items-center gap-3 px-3 py-2 rounded-xl glass-card border border-white/5 hover:border-brand-primary/30 transition-colors">
+                <Link key={e.id} href={`/emotes/${e.id}`} className="flex items-center gap-3 px-3 py-2 rounded-xl glass-card border border-white/5 hover:border-brand-primary/30 transition-colors">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style={checker}>
                     <img src={e.imageUrl} alt={e.code} style={{ height: Math.min(28, e.width) }} className="object-contain" />
                   </div>
@@ -218,7 +288,8 @@ export function VaultBrowseClient({
                     <p className="text-xs font-black text-white truncate">{e.code}</p>
                     {e.owner && <p className="text-[10px] text-zinc-500 truncate">{e.owner}</p>}
                   </div>
-                  {e.animated && <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-black/60 text-amber-300 border border-amber-400/20 shrink-0">GIF</span>}
+                  <ChannelStat n={e.channels} />
+                  <AddEmoteButton id={e.id} compact alreadyAdded={mine.has(e.id)} />
                 </Link>
               ))}
             </div>
@@ -234,6 +305,87 @@ export function VaultBrowseClient({
         </div>
       </div>
     </div>
+  );
+}
+
+/** 7TV-style tile: hover zooms the emote and reveals copy + quick-add. */
+function EmoteCard({ e, added = false }: { e: VaultEmote; added?: boolean }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = (ev: React.MouseEvent) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    navigator.clipboard?.writeText(e.imageUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    });
+  };
+
+  return (
+    <Link
+      href={`/emotes/${e.id}`}
+      className={`group relative flex flex-col items-center rounded-xl p-3 transition-colors ${
+        added ? "bg-emerald-500/[0.07] hover:bg-emerald-500/[0.12]" : "bg-white/[0.03] hover:bg-white/[0.07]"
+      }`}
+    >
+      <div className="relative w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg">
+        <img
+          src={e.imageUrl}
+          alt={`${e.code} emote`}
+          loading="lazy"
+          className="max-w-full max-h-full object-contain transition-transform duration-200 ease-out group-hover:scale-110"
+        />
+        {/* 7TV badges the emote's kind in the corner */}
+        <div className="absolute top-1.5 left-1.5 flex gap-1">
+          {e.animated && (
+            <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-black/60 text-amber-300 border border-amber-400/20">
+              GIF
+            </span>
+          )}
+          {e.zeroWidth && (
+            <span title="Overlaying emote" className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-black/60 text-violet-300 border border-violet-400/20">
+              ZW
+            </span>
+          )}
+        </div>
+        {added && (
+          <span title="Already in your channel" className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-emerald-500/25 border border-emerald-400/40 flex items-center justify-center text-emerald-300">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+          </span>
+        )}
+        {/* Hover actions */}
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 px-1.5 py-1 bg-gradient-to-t from-black/85 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={copy}
+            title="Copy image link"
+            className="p-1 rounded text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            {copied ? (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+            )}
+          </button>
+          <AddEmoteButton id={e.id} compact alreadyAdded={added} />
+        </div>
+      </div>
+      {/* 7TV stacks the code over the uploader, both centred under the art. */}
+      <div className="w-full mt-2.5 text-center">
+        <code className="block text-[13px] font-bold text-white truncate leading-tight">{e.code}</code>
+        {e.owner && <p className="text-[11px] text-zinc-500 truncate leading-tight mt-0.5">{e.owner}</p>}
+      </div>
+    </Link>
+  );
+}
+
+/** "used in N channels" — the BTTV/7TV popularity signal. */
+function ChannelStat({ n }: { n: number }) {
+  if (!n) return null;
+  return (
+    <span title={`Used in ${n} channel${n === 1 ? "" : "s"}`} className="flex items-center gap-0.5 text-[10px] font-black text-zinc-500 shrink-0">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /></svg>
+      {n}
+    </span>
   );
 }
 

@@ -23,6 +23,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Agent tooling (vendored skill docs, not app code)
+.agents/
+
 # Local Scripts
 generate-token.js
 test-tmi.js
